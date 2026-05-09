@@ -1,6 +1,6 @@
 {
-  "name": "Calisthenics Tracker",
-  "short_name": "Calis",
+  "name": "Calis Tracker",
+  "short_name": "Calis Tracker",
   "description": "Foundation → Elite calisthenics progression tracker.",
   "start_url": "./",
   "scope": "./",
