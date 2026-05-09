@@ -13,6 +13,18 @@ const LS_DATA = (name) => `calis.data.${name}`;
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
+// True when the data looks like a fresh / empty default — no logged
+// sessions, no logs, no ladder rungs set. Used by pull() to decide
+// whether to override a "newer" but empty local state with cloud data.
+function isEssentiallyEmpty(d) {
+  if (!d) return true;
+  return Object.keys(d.weeks || {}).length === 0
+      && (d.logs || []).length === 0
+      && Object.keys(d.ladders || {}).length === 0
+      && Object.keys(d.standardsConfirmed || {}).length === 0
+      && Object.keys(d.customExercises || {}).length === 0;
+}
+
 // One-shot migration. Old data used ISO week ids ("2026-W19") under
 // `weeks`. We've since switched to Saturday-anchored ids ("2026-05-09"),
 // so any old keys would silently disappear from the week view. Roll
@@ -111,10 +123,15 @@ export function StoreProvider({ children }) {
       if (!USERS.includes(name)) return;
       const remote = row.data || {};
       // Local has a "lastTouched" timestamp. If remote is newer, take it.
+      // ALSO take remote when local looks essentially empty but remote has
+      // real content — recovers from a previous bug that stamped an empty
+      // local state with a fresh timestamp ahead of the cloud copy.
       const local = JSON.parse(localStorage.getItem(LS_DATA(name)) || '{}');
       const localTs = local._touched || 0;
       const remoteTs = new Date(row.updated_at || 0).getTime();
-      if (remoteTs >= localTs) {
+      const localEmpty = isEssentiallyEmpty(local);
+      const remoteHasData = !isEssentiallyEmpty(remote);
+      if (remoteTs >= localTs || (localEmpty && remoteHasData)) {
         const merged = migrateWeeks({ ...DEFAULT_DATA(), ...remote, _touched: remoteTs });
         localStorage.setItem(LS_DATA(name), JSON.stringify(merged));
         dispatch({ type: 'setUserData', name, data: merged });
