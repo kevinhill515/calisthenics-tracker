@@ -1,5 +1,9 @@
-// All week math is ISO Mon→Sun. The user said completion matters, not the
-// specific day, so we represent a week with a single id like "2026-W19".
+// Weeks for this app run Saturday → Friday. Saturday is day 1.
+// (User specified May 9 2026, a Saturday, as the program kickoff.)
+//
+// We use the Saturday-of-week date string as the stable id for a week,
+// e.g. "2026-05-09" represents the Sat May 9 → Fri May 15 week. Stable
+// across timezones and trivially comparable.
 
 const MS_PER_DAY = 86_400_000;
 
@@ -17,55 +21,50 @@ export function fmtDate(d) {
   return `${y}-${m}-${day}`;
 }
 
-/** Monday-of-week for a given Date (Mon=1...Sun=7). */
-export function mondayOf(d) {
-  const day = d.getDay() || 7; // Sun=0 → 7
+/** Most-recent Saturday on or before `d`. JS getDay: Sun=0..Sat=6. */
+export function weekStartOf(d) {
+  const day = d.getDay();
+  const diff = (day - 6 + 7) % 7; // days since the prior Saturday
   const m = new Date(d);
   m.setHours(12, 0, 0, 0);
-  m.setDate(m.getDate() - (day - 1));
+  m.setDate(m.getDate() - diff);
   return m;
 }
 
-export function sundayOf(d) {
-  const m = mondayOf(d);
-  const s = new Date(m);
-  s.setDate(s.getDate() + 6);
-  return s;
+/** The Friday that closes the same week. */
+export function weekEndOf(d) {
+  const start = weekStartOf(d);
+  const e = new Date(start);
+  e.setDate(e.getDate() + 6);
+  return e;
+}
+
+/** Stable id for the week containing `asOf` — the Saturday's YYYY-MM-DD. */
+export function weekId(asOf = new Date()) {
+  return fmtDate(weekStartOf(asOf));
 }
 
 /** Number of complete weeks elapsed since startDate (week 1 = the start week). */
 export function weekNumber(startDate, asOf = new Date()) {
-  const start = mondayOf(parseDate(startDate));
-  const now = mondayOf(asOf);
+  const start = weekStartOf(parseDate(startDate));
+  const now = weekStartOf(asOf);
   const diff = Math.floor((now - start) / (MS_PER_DAY * 7));
   return diff + 1;
 }
 
-/** Stable id for a week: ISO year + week number e.g. "2026-W19". */
-export function weekId(asOf = new Date()) {
-  const d = new Date(asOf);
-  d.setHours(12, 0, 0, 0);
-  // ISO week: Thursday of the same week defines the year.
-  const day = d.getDay() || 7;
-  d.setDate(d.getDate() + 4 - day);
-  const yearStart = new Date(d.getFullYear(), 0, 1);
-  const week = Math.ceil(((d - yearStart) / MS_PER_DAY + 1) / 7);
-  return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
-}
-
-/** Format range like "May 4 – 10". */
+/** Format the current week as "May 9 – 15". */
 export function fmtWeekRange(asOf = new Date()) {
-  const m = mondayOf(asOf);
-  const s = sundayOf(asOf);
+  const s = weekStartOf(asOf);
+  const e = weekEndOf(asOf);
   const fmt = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  return `${fmt(m)} – ${fmt(s)}`;
+  return `${fmt(s)} – ${fmt(e)}`;
 }
 
-/** All weekIds between startDate and now, oldest → newest. */
+/** All weekIds between startDate and asOf, oldest → newest. */
 export function allWeekIds(startDate, asOf = new Date()) {
   const ids = [];
-  let cursor = mondayOf(parseDate(startDate));
-  const end = mondayOf(asOf);
+  let cursor = weekStartOf(parseDate(startDate));
+  const end = weekStartOf(asOf);
   while (cursor <= end) {
     ids.push(weekId(cursor));
     cursor = new Date(cursor.getTime() + 7 * MS_PER_DAY);

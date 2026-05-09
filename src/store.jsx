@@ -13,6 +13,27 @@ const LS_DATA = (name) => `calis.data.${name}`;
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
+// One-shot migration. Old data used ISO week ids ("2026-W19") under
+// `weeks`. We've since switched to Saturday-anchored ids ("2026-05-09"),
+// so any old keys would silently disappear from the week view. Roll
+// them onto the current week so the user keeps any taps they made.
+function migrateWeeks(data) {
+  if (!data || !data.weeks) return data;
+  const isoKey = /^\d{4}-W\d{2}$/;
+  const out = {};
+  let touched = false;
+  for (const [k, v] of Object.entries(data.weeks)) {
+    if (isoKey.test(k)) {
+      const into = weekId();
+      out[into] = { ...(out[into] || {}), ...v };
+      touched = true;
+    } else {
+      out[k] = v;
+    }
+  }
+  return touched ? { ...data, weeks: out } : data;
+}
+
 const DEFAULT_DATA = () => ({
   startDate: TODAY(),
   phaseOverride: null,
@@ -63,7 +84,8 @@ export function StoreProvider({ children }) {
     for (const u of USERS) {
       try {
         const raw = localStorage.getItem(LS_DATA(u));
-        users[u] = raw ? { ...DEFAULT_DATA(), ...JSON.parse(raw) } : DEFAULT_DATA();
+        const parsed = raw ? { ...DEFAULT_DATA(), ...JSON.parse(raw) } : DEFAULT_DATA();
+        users[u] = migrateWeeks(parsed);
       } catch {
         users[u] = DEFAULT_DATA();
       }
@@ -85,7 +107,7 @@ export function StoreProvider({ children }) {
       const localTs = local._touched || 0;
       const remoteTs = new Date(row.updated_at || 0).getTime();
       if (remoteTs >= localTs) {
-        const merged = { ...DEFAULT_DATA(), ...remote, _touched: remoteTs };
+        const merged = migrateWeeks({ ...DEFAULT_DATA(), ...remote, _touched: remoteTs });
         localStorage.setItem(LS_DATA(name), JSON.stringify(merged));
         dispatch({ type: 'setUserData', name, data: merged });
       }
