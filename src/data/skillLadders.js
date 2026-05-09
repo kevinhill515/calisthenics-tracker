@@ -118,7 +118,7 @@ export const SKILL_LADDERS = [
       { id: 'pseudo-planche-pushup',   label: 'Pseudo Planche Push-Up',   target: 8  },
       { id: 'tuck-planche-pushup',     label: 'Tuck Planche Push-Up',     target: 5  },
       { id: 'straddle-planche-pushup', label: 'Straddle Planche Push-Up', target: 3  },
-      { id: 'full-planche',            label: 'Full Planche Push-Up',     target: 1  },
+      { id: 'full-planche-pushup',     label: 'Full Planche Push-Up',     target: 1  },
     ],
   },
   {
@@ -140,8 +140,10 @@ export const SKILL_LADDERS = [
     name: 'Muscle-Up Line',
     color: 'cyan',
     unit: 'rep',
+    // Prereq for muscle-up is "strict pull-up + strict dip" — both already
+    // tracked in their own ladders (Pull-Up Line + Foundations), so don't
+    // mirror them here (would cross-pollute logs by sharing an exercise id).
     rungs: [
-      { id: 'pull-up',            label: 'Strict Pull-Up + Strict Dip',    target: 1 },
       { id: 'explosive-pullup',   label: 'Explosive Pull-Up (Chest-to-Bar)', target: 5 },
       { id: 'bar-muscle-up',      label: 'Bar Muscle-Up (Kipped)',          target: 3 },
       { id: 'strict-muscle-up',   label: 'Strict Bar Muscle-Up',            target: 3 },

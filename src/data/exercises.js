@@ -80,6 +80,11 @@ export const EXERCISES = {
     cue: 'Press from straddle planche. Crushing for shoulders.',
     yt: yt('straddle planche push up'),
   },
+  'full-planche-pushup': {
+    name: 'Full planche push-up',
+    cue: 'From full planche, lower chest to the floor with arms straight throughout, then press back up. Top of the calisthenics pushing tree.',
+    yt: yt('full planche push up'),
+  },
   'planche-press-from-lsit': {
     name: 'Planche press from L-sit',
     cue: 'From L-sit on parallettes, press up into planche with straight arms. Compression + straight-arm strength.',
