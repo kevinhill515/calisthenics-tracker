@@ -52,6 +52,19 @@ export default function SettingsSheet({ open, onClose }) {
           >
             Refresh from cloud
           </button>
+          <button
+            onClick={async () => {
+              if (!confirm('Overwrite this device with whatever is in the cloud right now? Use this only if your data has gone missing locally.')) return;
+              const ok = await actions.forceRestoreFromCloud();
+              alert(ok ? 'Restored from cloud.' : 'Could not reach cloud — check your connection.');
+            }}
+            className="mt-2 w-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 rounded-xl py-2.5 text-sm"
+          >
+            Force restore from cloud
+          </button>
+          <p className="mt-1 text-[11px] text-zinc-500 leading-relaxed">
+            Force restore overrides this device's data with the cloud copy, ignoring local edits and timestamps. Recovery only — not for daily sync.
+          </p>
         </Section>
 
         {/* App version / update */}

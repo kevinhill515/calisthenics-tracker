@@ -238,6 +238,25 @@ export function StoreProvider({ children }) {
     });
   }, [patch]);
 
+  // Hard recovery: force-overwrite local with whatever is in Supabase,
+  // ignoring all timestamp / emptiness logic. Last-resort button for the
+  // user when normal pull won't bring back their data.
+  const forceRestoreFromCloud = useCallback(async () => {
+    if (!SUPA_CONFIGURED) return false;
+    const rows = await fetchAllUsers();
+    if (!rows.length) return false;
+    rows.forEach((row) => {
+      const name = (row.name || '').toLowerCase();
+      if (!USERS.includes(name)) return;
+      const remote = row.data || {};
+      const merged = migrateWeeks({ ...DEFAULT_DATA(), ...remote, _touched: Date.now() });
+      localStorage.setItem(LS_DATA(name), JSON.stringify(merged));
+      dispatch({ type: 'setUserData', name, data: merged });
+    });
+    setReadyToPush(true);
+    return true;
+  }, []);
+
   const value = useMemo(
     () => ({
       ...state,
@@ -256,9 +275,10 @@ export function StoreProvider({ children }) {
         addCustomExercise,
         hideCustomExercise,
         pull,
+        forceRestoreFromCloud,
       },
     }),
-    [state, myData, setIdentity, toggleSession, addLog, removeLog, setLadderRung, toggleStandard, setStartDate, setPhaseOverride, addCustomExercise, hideCustomExercise, pull]
+    [state, myData, setIdentity, toggleSession, addLog, removeLog, setLadderRung, toggleStandard, setStartDate, setPhaseOverride, addCustomExercise, hideCustomExercise, pull, forceRestoreFromCloud]
   );
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
