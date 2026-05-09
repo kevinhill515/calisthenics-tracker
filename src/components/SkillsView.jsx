@@ -14,6 +14,10 @@ const COLOR_BAR = {
   fuchsia: 'bg-fuchsia-400',
   cyan:    'bg-cyan-400',
   lime:    'bg-lime-400',
+  yellow:  'bg-yellow-400',
+  pink:    'bg-pink-400',
+  teal:    'bg-teal-400',
+  indigo:  'bg-indigo-400',
 };
 const COLOR_TEXT = {
   rose:    '#fb7185',
@@ -25,6 +29,10 @@ const COLOR_TEXT = {
   fuchsia: '#e879f9',
   cyan:    '#22d3ee',
   lime:    '#a3e635',
+  yellow:  '#facc15',
+  pink:    '#f472b6',
+  teal:    '#2dd4bf',
+  indigo:  '#818cf8',
 };
 
 export default function SkillsView() {
@@ -38,68 +46,23 @@ export default function SkillsView() {
       <p className="text-xs text-zinc-500 mb-4">Tap a rung to set your current level. Tap the title to view how-to.</p>
 
       <div className="space-y-3">
-        {SKILL_LADDERS.map((ladder) => {
-          const current = meData.ladders?.[ladder.id] ?? 0;
-          const pct = (current / (ladder.rungs.length - 1)) * 100;
-          // sparkline: best PR per rung over time, oldest → newest, for current rung exercise
-          const currentRung = ladder.rungs[current];
-          const series = bestSeries(meData.logs || [], currentRung.id, currentRung.unit || ladder.unit);
-
-          return (
-            <div key={ladder.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="font-semibold text-zinc-100">{ladder.name}</h2>
-                <span className="text-xs text-zinc-500">{current + 1}/{ladder.rungs.length}</span>
-              </div>
-
-              <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden mb-3">
-                <div className={`h-full ${COLOR_BAR[ladder.color]}`} style={{ width: `${pct}%` }} />
-              </div>
-
-              <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
-                {ladder.rungs.map((r, i) => {
-                  const active = i === current;
-                  const passed = i < current;
-                  return (
-                    <button
-                      key={r.id}
-                      onClick={() => actions.setLadderRung(ladder.id, i)}
-                      onDoubleClick={() => setOpenExercise(r.id)}
-                      className={`flex-shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
-                        active
-                          ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
-                          : passed
-                          ? 'bg-zinc-800 text-zinc-400 border-zinc-800'
-                          : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-700'
-                      }`}
-                    >
-                      {i + 1}. {r.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-3 flex items-center gap-3">
-                <button
-                  onClick={() => setOpenExercise(currentRung.id)}
-                  className="text-xs text-zinc-300 hover:text-emerald-400 underline-offset-2 hover:underline"
-                >
-                  {currentRung.label} · target {currentRung.target}{(currentRung.unit || ladder.unit) === 'sec' ? 's' : ' reps'}
-                </button>
-                {series.length > 1 && (
-                  <div className="flex-1 h-8">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={series} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
-                        <YAxis hide domain={['dataMin', 'dataMax']} />
-                        <Line type="monotone" dataKey="v" stroke={COLOR_TEXT[ladder.color]} strokeWidth={2} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {SKILL_LADDERS.map((ladder) =>
+          ladder.tracker
+            ? <TrackerCard
+                key={ladder.id}
+                ladder={ladder}
+                logs={meData.logs || []}
+                onOpen={(id) => setOpenExercise(id)}
+              />
+            : <ProgressionCard
+                key={ladder.id}
+                ladder={ladder}
+                current={Math.min(meData.ladders?.[ladder.id] ?? 0, ladder.rungs.length - 1)}
+                logs={meData.logs || []}
+                onSetRung={(i) => actions.setLadderRung(ladder.id, i)}
+                onOpen={(id) => setOpenExercise(id)}
+              />
+        )}
       </div>
 
       <ExerciseSheet
@@ -109,6 +72,115 @@ export default function SkillsView() {
       />
     </div>
   );
+}
+
+// A standard progression: horizontal rungs, current rung highlighted,
+// progress bar, sparkline of the focused rung.
+function ProgressionCard({ ladder, current, logs, onSetRung, onOpen }) {
+  const pct = (current / (ladder.rungs.length - 1)) * 100;
+  const currentRung = ladder.rungs[current];
+  const series = bestSeries(logs, currentRung.id, currentRung.unit || ladder.unit);
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="font-semibold text-zinc-100">{ladder.name}</h2>
+        <span className="text-xs text-zinc-500">{current + 1}/{ladder.rungs.length}</span>
+      </div>
+
+      <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden mb-3">
+        <div className={`h-full ${COLOR_BAR[ladder.color]}`} style={{ width: `${pct}%` }} />
+      </div>
+
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+        {ladder.rungs.map((r, i) => {
+          const active = i === current;
+          const passed = i < current;
+          return (
+            <button
+              key={r.id}
+              onClick={() => onSetRung(i)}
+              onDoubleClick={() => onOpen(r.id)}
+              className={`flex-shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
+                active
+                  ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
+                  : passed
+                  ? 'bg-zinc-800 text-zinc-400 border-zinc-800'
+                  : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-700'
+              }`}
+            >
+              {i + 1}. {r.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          onClick={() => onOpen(currentRung.id)}
+          className="text-xs text-zinc-300 hover:text-emerald-400 underline-offset-2 hover:underline"
+        >
+          {currentRung.label} · target {currentRung.target}{(currentRung.unit || ladder.unit) === 'sec' ? 's' : ' reps'}
+        </button>
+        {series.length > 1 && (
+          <div className="flex-1 h-8">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={series} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+                <YAxis hide domain={['dataMin', 'dataMax']} />
+                <Line type="monotone" dataKey="v" stroke={COLOR_TEXT[ladder.color]} strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// A "tracker" section (e.g. Foundations): each rung is an independent
+// stat with its own best-ever number. No progression, no current rung.
+function TrackerCard({ ladder, logs, onOpen }) {
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+      <h2 className="font-semibold text-zinc-100 mb-3">{ladder.name}</h2>
+      <ul className="divide-y divide-zinc-800/70 -mx-1">
+        {ladder.rungs.map((r) => {
+          const unit = r.unit || ladder.unit;
+          const best = bestValue(logs, r.id, unit);
+          const hit = best != null && best >= r.target;
+          return (
+            <li key={r.id}>
+              <button
+                onClick={() => onOpen(r.id)}
+                className="w-full text-left px-1 py-2.5 flex items-center gap-3 hover:bg-zinc-800/40 rounded-lg"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-zinc-100 truncate">{r.label}</div>
+                  <div className="text-[11px] text-zinc-500 mt-0.5">
+                    target {r.target}{unit === 'sec' ? 's' : ' reps'}
+                  </div>
+                </div>
+                <div className={`text-sm font-bold tabular-nums ${hit ? 'text-emerald-400' : 'text-zinc-300'}`}>
+                  {best != null ? `${best}${unit === 'sec' ? 's' : ''}` : '—'}
+                </div>
+                {hit && <span className="text-emerald-400 text-xs">✓</span>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function bestValue(logs, exerciseId, unit) {
+  let m = null;
+  for (const l of logs) {
+    if (l.exerciseId !== exerciseId) continue;
+    const v = unit === 'sec' ? l.hold : l.reps;
+    if (v == null) continue;
+    if (m == null || v > m) m = v;
+  }
+  return m;
 }
 
 // Returns [{v}] sparkline series for the best (max) value of `field`

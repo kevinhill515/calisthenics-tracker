@@ -99,7 +99,7 @@ export const EXERCISES = {
   },
   'tuck-fl-raise': {
     name: 'Tuck front lever raise (feet on ground)',
-    cue: 'Hang from bar, lift hips into tuck FL position by pulling shoulders down and back. Lower with control.',
+    cue: 'Hang from the bar, lift hips into tuck front lever position by pulling shoulders down and back. Lower with control.',
     yt: yt('tuck front lever raise'),
   },
   'tuck-fl': {
@@ -108,8 +108,8 @@ export const EXERCISES = {
     yt: yt('tuck front lever fitnessfaqs'),
   },
   'adv-tuck-fl': {
-    name: 'Advanced tuck FL',
-    cue: 'Tuck FL with flat back — knees away from chest, hips drop. The honest progression check before straddle.',
+    name: 'Advanced tuck front lever',
+    cue: 'Tuck front lever with a flat back — knees away from chest, hips drop. The honest progression check before straddle.',
     yt: yt('advanced tuck front lever'),
   },
   'single-leg-fl': {
@@ -123,8 +123,8 @@ export const EXERCISES = {
     yt: yt('straddle front lever progression'),
   },
   'half-lay-fl': {
-    name: 'Half-lay FL',
-    cue: 'Legs together but bent at hips ~90°. Last stop before full FL.',
+    name: 'Half-lay front lever',
+    cue: 'Legs together but bent at hips ~90°. Last stop before full front lever.',
     yt: yt('half lay front lever'),
   },
   'full-fl': {
@@ -139,7 +139,7 @@ export const EXERCISES = {
   },
   'fl-pull': {
     name: 'Front lever pull',
-    cue: 'From dead hang, pull up into FL position keeping arms straight, then lower. Trains the entry to FL.',
+    cue: 'From dead hang, pull up into front lever position keeping arms straight, then lower. Trains the entry to front lever.',
     yt: yt('front lever pull straight arm'),
   },
   'ice-cream-maker': {
@@ -161,12 +161,12 @@ export const EXERCISES = {
   // ---------- back lever line ----------
   'tuck-back-lever': {
     name: 'Tuck back lever',
-    cue: 'From german hang, tuck knees to chest with body parallel to floor, facing down. First real BL hold.',
+    cue: 'From a german hang, tuck knees to chest with body parallel to the floor, facing down. First real back lever hold.',
     yt: yt('tuck back lever'),
   },
   'adv-tuck-bl': {
-    name: 'Advanced tuck BL',
-    cue: 'Tuck BL with flat back. Knees away from chest.',
+    name: 'Advanced tuck back lever',
+    cue: 'Tuck back lever with a flat back. Knees away from chest.',
     yt: yt('advanced tuck back lever'),
   },
   'straddle-bl': {
@@ -217,18 +217,18 @@ export const EXERCISES = {
     yt: yt('straddle press handstand'),
   },
   'wall-hspu': {
-    name: 'Wall HSPU',
-    cue: 'Chest-to-wall handstand, lower head to floor, press back up. Use bands or pike progression to build to strict.',
+    name: 'Wall handstand push-up',
+    cue: 'Chest-to-wall handstand, lower head to the floor, press back up. Use bands or pike progression to build to strict.',
     yt: yt('wall handstand push up'),
   },
   'wall-straddle-hspu': {
-    name: 'Wall straddle HSPU',
-    cue: 'Wall HSPU with straddle to keep balance easier while still strict.',
+    name: 'Wall straddle handstand push-up',
+    cue: 'Wall handstand push-up with legs in a straddle to keep balance easier while still strict.',
     yt: yt('wall straddle handstand push up'),
   },
   'freestanding-hspu': {
-    name: 'Freestanding HSPU',
-    cue: 'Strict HSPU with no wall. Kick up, lower head, press up without losing balance.',
+    name: 'Freestanding handstand push-up',
+    cue: 'Strict handstand push-up with no wall. Kick up, lower head, press up without losing balance.',
     yt: yt('freestanding handstand push up'),
   },
   'one-arm-handstand-prep': {
@@ -237,7 +237,7 @@ export const EXERCISES = {
     yt: yt('one arm handstand prep'),
   },
 
-  // ---------- pull line / OAP ----------
+  // ---------- pull line / one-arm pull-up ----------
   'pull-up': {
     name: 'Pull-up',
     cue: 'Dead hang start, chin clearly over bar, no kipping. Scapulae depress before elbows bend.',
@@ -259,18 +259,18 @@ export const EXERCISES = {
     yt: yt('typewriter pull up'),
   },
   'oa-chin-negative': {
-    name: 'One-arm chin negative',
-    cue: 'From top of chin-up (palm to face), let go with one hand and lower as slowly as possible. Track descent in seconds.',
+    name: 'One-arm chin-up negative',
+    cue: 'From the top of a chin-up (palm to face), let go with one hand and lower as slowly as possible. Track descent in seconds.',
     yt: yt('one arm chin up negative'),
   },
   'assisted-oap': {
     name: 'Assisted one-arm pull-up',
-    cue: 'Use band, towel, or other-hand assist. Reduce assist over time.',
+    cue: 'One-arm pull-up using a band, towel, or other-hand assist. Reduce the assistance over time.',
     yt: yt('assisted one arm pull up band'),
   },
   'oap': {
     name: 'One-arm pull-up',
-    cue: 'Strict, no kipping, chin clears the bar. The grail of pulling.',
+    cue: 'Strict one-arm pull-up: no kipping, chin clears the bar. The grail of pulling.',
     yt: yt('one arm pull up tutorial'),
   },
   'australian-pullup': {
@@ -282,6 +282,11 @@ export const EXERCISES = {
     name: 'Scapular pull-up',
     cue: 'Dead hang, depress and retract scapulae without bending elbows. Owns the front lever pull.',
     yt: yt('scapular pull up'),
+  },
+  'active-hang': {
+    name: 'Active hang',
+    cue: 'Dead hang from the bar with shoulders engaged (scapulae depressed and slightly retracted). Not a passive ragdoll hang — keep tension. Track time.',
+    yt: yt('active hang vs passive hang'),
   },
 
   // ---------- push line ----------
@@ -302,7 +307,7 @@ export const EXERCISES = {
   },
   'pike-pushup': {
     name: 'Pike push-up',
-    cue: 'Downward dog position, lower head between hands, press back up. Vertical pressing precursor to HSPU.',
+    cue: 'Downward-dog position, lower head between hands, press back up. Vertical pressing precursor to the handstand push-up.',
     yt: yt('pike push up tutorial'),
   },
   'archer-pushup': {
@@ -359,7 +364,7 @@ export const EXERCISES = {
   },
   'weighted-muscle-up': {
     name: 'Weighted muscle-up',
-    cue: 'Strict MU with added load. Save for late phase 4 / phase 5.',
+    cue: 'Strict muscle-up with added load. Save for late phase 4 / phase 5.',
     yt: yt('weighted muscle up'),
   },
   'burpee-pullup': {
@@ -463,6 +468,16 @@ export const EXERCISES = {
     cue: 'Single-leg squat to full depth, opposite leg straight. Use a counterweight or box assist to start.',
     yt: yt('pistol squat tutorial'),
   },
+  'weighted-pistol-squat': {
+    name: 'Weighted pistol squat',
+    cue: 'Pistol squat with a dumbbell or kettlebell held at chest. Keep the heel down and the back leg from the floor.',
+    yt: yt('weighted pistol squat'),
+  },
+  'shrimp-squat': {
+    name: 'Shrimp squat',
+    cue: 'Single-leg squat with the back foot held behind by the same-side hand, knee tracks straight ahead, descent under control.',
+    yt: yt('shrimp squat tutorial'),
+  },
   'pistol-squat-progression': {
     name: 'Pistol squat progression',
     cue: 'Box-assisted pistol → grab toe pistol → free pistol. One step at a time.',
@@ -482,6 +497,11 @@ export const EXERCISES = {
     name: 'Nordic curl',
     cue: 'Full Nordic — eccentric and concentric on hamstrings alone. Brutal.',
     yt: yt('nordic curl tutorial'),
+  },
+  'weighted-nordic-curl': {
+    name: 'Weighted Nordic curl',
+    cue: 'Full Nordic with a plate or dumbbell held at the chest. Add load only after multiple clean unweighted reps.',
+    yt: yt('weighted nordic curl'),
   },
   'calf-raise': {
     name: 'Calf raise',

@@ -110,7 +110,7 @@ export const PHASES = [
     id: 3,
     name: 'Skill Acquisition',
     weekRange: [13, 24],
-    goal: 'Lock in tuck planche and tuck FL. Build advanced tuck and the muscle-up. First freestanding handstand. Begin one-arm pull-up work.',
+    goal: 'Lock in tuck planche and tuck front lever. Build advanced tuck and the muscle-up. First freestanding handstand. Begin one-arm pull-up work.',
     note: 'Static holds compound slowly. If you can hold tuck planche 15s clean, attempt advanced tuck for 5s. Chase leverage, not time on a regression.',
     sessions: {
       Push: { items: [
@@ -124,7 +124,7 @@ export const PHASES = [
       ]},
       Pull: { items: [
         { ex: 'scapular-prep',  dose: '10 min' },
-        { ex: 'adv-tuck-fl',    dose: '6 × 5–10s (→ straddle FL attempts)', skill: true },
+        { ex: 'adv-tuck-fl',    dose: '6 × 5–10s (→ straddle front lever attempts)', skill: true },
         { ex: 'fl-pull',        dose: '4 × 5 (tuck → adv tuck)' },
         { ex: 'weighted-pullup',dose: '5 × 3 (heavy)' },
         { ex: 'archer-pullup',  dose: '4 × 4/side' },
@@ -147,7 +147,7 @@ export const PHASES = [
         { ex: 'pull-up',          dose: 'min 1: 5 reps' },
         { ex: 'dip',              dose: 'min 2: 8 reps' },
         { ex: 'push-up',          dose: 'min 3: 8 + 5 explosive' },
-        { ex: 'tuck-fl',          dose: 'min 4: 30s tuck FL or PL' },
+        { ex: 'tuck-fl',          dose: 'min 4: 30s tuck front lever or planche hold' },
       ]},
     },
   },
@@ -157,7 +157,7 @@ export const PHASES = [
     id: 4,
     name: 'Advanced Statics',
     weekRange: [25, 40],
-    goal: 'Straddle planche and straddle front lever. Strict freestanding HSPU. One-arm pull-up. Clean human flag.',
+    goal: 'Straddle planche and straddle front lever. Strict freestanding handstand push-up. One-arm pull-up. Clean human flag.',
     note: 'Listen to elbows and shoulders. Tendons adapt slower than muscle — if anything aches sharply, deload immediately.',
     sessions: {
       Push: { items: [
@@ -206,7 +206,7 @@ export const PHASES = [
     id: 5,
     name: 'Elite',
     weekRange: [41, 999],
-    goal: 'Full planche, full front lever, multiple OAP, multiple freestanding HSPU, clean flag, combos.',
+    goal: 'Full planche, full front lever, multiple one-arm pull-ups, multiple freestanding handstand push-ups, clean human flag, combos.',
     note: 'Pick two priority skills per cycle, train heavy 2x/week, maintain everything else 1x/week. Cycle priorities every 8–12 weeks.',
     sessions: {
       Push: { items: [
@@ -233,7 +233,7 @@ export const PHASES = [
         { ex: 'pistol-squat',           dose: '20 min lower body strength' },
       ]},
       Density: { note: 'Light density / freestyle flow + 30 min film and refine', items: [
-        { ex: 'strict-muscle-up',        dose: 'combo: MU → planche PU → BL → straddle FL row' },
+        { ex: 'strict-muscle-up',        dose: 'combo: muscle-up → planche push-up → back lever → straddle front lever row' },
       ]},
     },
   },
