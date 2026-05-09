@@ -1,6 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Rounded dark background -->
   <rect width="64" height="64" rx="14" fill="#0b0d10"/>
-  <path d="M14 24h6v16h-6zM44 24h6v16h-6zM20 30h24v4H20z" fill="#10b981"/>
-  <circle cx="22" cy="32" r="3" fill="#10b981"/>
-  <circle cx="42" cy="32" r="3" fill="#10b981"/>
+
+  <!-- Soft emerald glow behind the figure -->
+  <circle cx="32" cy="36" r="26" fill="#10b981" fill-opacity="0.10"/>
+
+  <!-- Pull-up bar with end-cap supports -->
+  <line x1="8" y1="15" x2="46" y2="15"
+        stroke="#34d399" stroke-width="3" stroke-linecap="round"/>
+  <line x1="9"  y1="15" x2="9"  y2="9"
+        stroke="#34d399" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="45" y1="15" x2="45" y2="9"
+        stroke="#34d399" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Two arms hanging straight down from the bar -->
+  <line x1="15" y1="16" x2="15" y2="32"
+        stroke="#34d399" stroke-width="3" stroke-linecap="round"/>
+  <line x1="23" y1="16" x2="23" y2="32"
+        stroke="#34d399" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Horizontal body (front-lever line: torso → hips) -->
+  <line x1="15" y1="34" x2="44" y2="34"
+        stroke="#34d399" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Tapered legs out to pointed toes -->
+  <line x1="44" y1="34" x2="58" y2="32.5"
+        stroke="#34d399" stroke-width="4.5" stroke-linecap="round"/>
+
+  <!-- Head, just below the bar between the shoulders -->
+  <circle cx="11" cy="34" r="3.5" fill="#34d399"/>
 </svg>
