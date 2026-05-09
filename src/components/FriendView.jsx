@@ -2,7 +2,7 @@ import { useStore, USER_NAMES } from '../store.jsx';
 import { phaseForWeek } from '../data/program.js';
 import { SESSION_TYPES } from '../data/program.js';
 import { SKILL_LADDERS } from '../data/skillLadders.js';
-import { weekId, weekNumber, allWeekIds } from '../utils/dates.js';
+import { weekId, weekNumber, allWeekIds, parseDate } from '../utils/dates.js';
 import ProgressRing from './ProgressRing.jsx';
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 
@@ -128,6 +128,14 @@ function weeklyChart(me, them) {
   return recent.map((id) => {
     const meDone = me.weeks?.[id] ? SESSION_TYPES.filter((s) => me.weeks[id][s]).length : 0;
     const themDone = them.weeks?.[id] ? SESSION_TYPES.filter((s) => them.weeks[id][s]).length : 0;
-    return { week: id.slice(-3), me: meDone, them: themDone };
+    return { week: weekLabel(id), me: meDone, them: themDone };
   });
+}
+
+// Turn a Saturday-anchored weekId ("2026-05-09") into a short axis label
+// like "5/9". Falls back to the raw id for any legacy / unexpected format.
+function weekLabel(id) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(id)) return id;
+  const d = parseDate(id);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }

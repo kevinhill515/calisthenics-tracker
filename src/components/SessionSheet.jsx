@@ -17,16 +17,10 @@ export default function SessionSheet({ open, onClose, sessionType, phase }) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
 
-  if (!sessionType || !phase) return null;
-  const session = phase.sessions[sessionType];
-  if (!session) return null;
-
-  const wid = weekId();
+  // ⚠ All hooks must run on every render (Rules of Hooks). Don't early-
+  // return before the useMemo calls — that crashes the second render.
   const today = TODAY();
-  const isDone = !!meData?.weeks?.[wid]?.[sessionType];
-  const meta = SESSION_META[sessionType];
 
-  // Quick lookup: how many sets did I log for each exercise today?
   const todayCounts = useMemo(() => {
     const m = {};
     for (const l of meData?.logs || []) {
@@ -36,13 +30,21 @@ export default function SessionSheet({ open, onClose, sessionType, phase }) {
     return m;
   }, [meData?.logs, today]);
 
-  // Custom exercises for this session type, in insertion order, hidden filtered out.
   const customItems = useMemo(() => {
+    if (!sessionType) return [];
     const entries = Object.entries(meData?.customExercises || {});
     return entries
       .filter(([, c]) => c.sessionType === sessionType && !c.hidden)
       .map(([id, c]) => ({ id, name: c.name }));
   }, [meData?.customExercises, sessionType]);
+
+  if (!sessionType || !phase) return null;
+  const session = phase.sessions[sessionType];
+  if (!session) return null;
+
+  const wid = weekId();
+  const isDone = !!meData?.weeks?.[wid]?.[sessionType];
+  const meta = SESSION_META[sessionType];
 
   const submitCustom = () => {
     const name = newName.trim();
