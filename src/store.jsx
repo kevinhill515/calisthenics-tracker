@@ -2,7 +2,7 @@
 // the sync layer (debounced writes, on-mount + on-focus reads). Identity
 // is whichever name was picked at first launch (Kevin or Bucky).
 
-import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useCallback } from 'react';
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useCallback, useState } from 'react';
 import { fetchAllUsers, upsertUser, SUPA_CONFIGURED } from './api/supabase.js';
 import { weekId } from './utils/dates.js';
 import { uid } from './utils/ids.js';
@@ -94,9 +94,17 @@ export function StoreProvider({ children }) {
   }, []);
 
   // ---------- pull from supabase on mount + on focus ----------
+  // `readyToPush` gates writes to Supabase: must stay false until the FIRST
+  // pull completes, otherwise an empty in-memory state on a fresh device
+  // (cleared cache, re-installed home-screen app) gets pushed up before the
+  // pull arrives, overwriting the user's actual data on the server.
   const lastPulled = useRef(0);
+  const [readyToPush, setReadyToPush] = useState(false);
   const pull = useCallback(async () => {
-    if (!SUPA_CONFIGURED) return;
+    if (!SUPA_CONFIGURED) {
+      setReadyToPush(true);
+      return;
+    }
     const rows = await fetchAllUsers();
     rows.forEach((row) => {
       const name = (row.name || '').toLowerCase();
@@ -113,6 +121,7 @@ export function StoreProvider({ children }) {
       }
     });
     lastPulled.current = Date.now();
+    setReadyToPush(true);
   }, []);
 
   useEffect(() => {
@@ -124,18 +133,23 @@ export function StoreProvider({ children }) {
   }, [state.hydrated, pull]);
 
   // ---------- persist self changes (debounced supabase push) ----------
+  // Only fires once readyToPush is true (i.e. the initial pull from
+  // Supabase has finished). Until then, we leave both localStorage and
+  // the cloud row alone — the values currently in state may just be the
+  // empty defaults, and pushing those would wipe the cloud copy.
   const pushTimer = useRef(null);
   const myData = state.users[state.identity];
 
   useEffect(() => {
     if (!state.hydrated || !state.identity || !myData) return;
+    if (!readyToPush) return;
     const stamped = { ...myData, _touched: Date.now() };
     localStorage.setItem(LS_DATA(state.identity), JSON.stringify(stamped));
     if (pushTimer.current) clearTimeout(pushTimer.current);
     pushTimer.current = setTimeout(() => {
       upsertUser(state.identity, stamped);
     }, 800);
-  }, [myData, state.identity, state.hydrated]);
+  }, [myData, state.identity, state.hydrated, readyToPush]);
 
   // ---------- actions ----------
   const setIdentity = useCallback((name) => {
