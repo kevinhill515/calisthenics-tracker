@@ -24,6 +24,9 @@ const DEFAULT_DATA = () => ({
   ladders: {},
   // standardsConfirmed: { phaseId: { standardId: 'YYYY-MM-DD' or true } }
   standardsConfirmed: {},
+  // customExercises: { [id]: { name, sessionType, hidden? } }
+  // Persisted forever (even when hidden) so old logs still resolve a name.
+  customExercises: {},
 });
 
 function reducer(state, action) {
@@ -155,6 +158,33 @@ export function StoreProvider({ children }) {
   const setStartDate = useCallback((iso) => patch((d) => ({ ...d, startDate: iso })), [patch]);
   const setPhaseOverride = useCallback((p) => patch((d) => ({ ...d, phaseOverride: p })), [patch]);
 
+  // Add a one-off custom exercise scoped to a session type. Returns the id
+  // so the caller can immediately open the ExerciseSheet on it.
+  const addCustomExercise = useCallback((sessionType, name) => {
+    const id = `custom-${uid()}`;
+    patch((d) => ({
+      ...d,
+      customExercises: {
+        ...(d.customExercises || {}),
+        [id]: { name: name.trim(), sessionType, hidden: false },
+      },
+    }));
+    return id;
+  }, [patch]);
+
+  // "Remove" hides a custom exercise from the session list. We never delete
+  // the metadata so old log entries still resolve a name.
+  const hideCustomExercise = useCallback((id) => {
+    patch((d) => {
+      const cur = (d.customExercises || {})[id];
+      if (!cur) return d;
+      return {
+        ...d,
+        customExercises: { ...d.customExercises, [id]: { ...cur, hidden: true } },
+      };
+    });
+  }, [patch]);
+
   const value = useMemo(
     () => ({
       ...state,
@@ -170,10 +200,12 @@ export function StoreProvider({ children }) {
         toggleStandard,
         setStartDate,
         setPhaseOverride,
+        addCustomExercise,
+        hideCustomExercise,
         pull,
       },
     }),
-    [state, myData, setIdentity, toggleSession, addLog, removeLog, setLadderRung, toggleStandard, setStartDate, setPhaseOverride, pull]
+    [state, myData, setIdentity, toggleSession, addLog, removeLog, setLadderRung, toggleStandard, setStartDate, setPhaseOverride, addCustomExercise, hideCustomExercise, pull]
   );
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

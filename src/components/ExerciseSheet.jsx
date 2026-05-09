@@ -1,13 +1,18 @@
 import Sheet from './Sheet.jsx';
 import { getExercise } from '../data/exercises.js';
 import { useStore } from '../store.jsx';
-import { uid } from '../utils/ids.js';
 import { useState } from 'react';
 
-// Tap-to-learn + quick log for a single exercise.
+const ytSearch = (q) => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+
+// Tap-to-learn + quick log for a single exercise. Handles both the built-in
+// program exercises and user-added custom ones (id starts with "custom-").
 export default function ExerciseSheet({ exerciseId, open, onClose }) {
   const { actions, meData } = useStore();
-  const ex = getExercise(exerciseId);
+  const custom = meData?.customExercises?.[exerciseId];
+  const ex = custom
+    ? { name: custom.name, cue: '', yt: ytSearch(custom.name + ' tutorial') }
+    : getExercise(exerciseId);
 
   const [sets, setSets] = useState('');
   const [reps, setReps] = useState('');

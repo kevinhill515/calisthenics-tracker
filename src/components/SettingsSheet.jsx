@@ -54,6 +54,25 @@ export default function SettingsSheet({ open, onClose }) {
           </button>
         </Section>
 
+        {/* App version / update */}
+        <Section title="App" sub="If new features aren't showing up after a deploy">
+          <button
+            onClick={() => {
+              // Best-effort: clear caches, then hard reload bypassing the
+              // cached html. iOS home-screen apps still sometimes need a
+              // delete-and-re-add — see the README.
+              if ('caches' in window) caches.keys().then(ks => ks.forEach(k => caches.delete(k)));
+              location.reload();
+            }}
+            className="w-full bg-zinc-800 hover:bg-zinc-700 rounded-xl py-2.5 text-sm text-zinc-200"
+          >
+            Reload app (clear cache)
+          </button>
+          <p className="mt-2 text-[11px] text-zinc-500 leading-relaxed">
+            If reload doesn't pull in new code on a home-screen app: long-press the icon, delete it, then re-add by visiting the URL in your browser and tapping Share → Add to Home Screen.
+          </p>
+        </Section>
+
         {/* Start date */}
         <Section title="Program start" sub="Week 1 begins on this date">
           <input
