@@ -5,9 +5,11 @@ import ExerciseSheet from './ExerciseSheet.jsx';
 import { useMemo, useState } from 'react';
 
 // PR table — best hold and best reps for every rung in every ladder.
+// Tapping a row opens the ExerciseSheet with that rung's target as the
+// "Today" prescription banner.
 export default function PRsView() {
   const { meData } = useStore();
-  const [open, setOpen] = useState(null);
+  const [open, setOpen] = useState(null); // {id, prescription} | null
 
   const rows = useMemo(() => {
     if (!meData) return [];
@@ -51,7 +53,10 @@ export default function PRsView() {
                 return (
                   <li key={row.ex.id}>
                     <button
-                      onClick={() => setOpen(row.ex.id)}
+                      onClick={() => setOpen({
+                        id: row.ex.id,
+                        prescription: `Target: ${target}${row.unit === 'sec' ? 's' : ' reps'}`,
+                      })}
                       className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-zinc-800/40 border-t border-zinc-800/50 first:border-t-0"
                     >
                       <div className="flex-1 min-w-0">
@@ -74,7 +79,12 @@ export default function PRsView() {
         ))}
       </div>
 
-      <ExerciseSheet open={!!open} exerciseId={open} onClose={() => setOpen(null)} />
+      <ExerciseSheet
+        open={!!open}
+        exerciseId={open?.id}
+        prescription={open?.prescription}
+        onClose={() => setOpen(null)}
+      />
     </div>
   );
 }

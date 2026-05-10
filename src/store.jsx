@@ -184,10 +184,13 @@ export function StoreProvider({ children }) {
     });
   }, [patch]);
 
+  // entry must include exerciseId; sessionType is optional but recommended —
+  // it's used to scope "logged today" indicators per session so e.g. push-ups
+  // logged during the Push session don't show as already-done on Density.
   const addLog = useCallback((entry) => {
     patch((d) => ({
       ...d,
-      logs: [...d.logs, { id: uid(), weekId: weekId(), date: TODAY(), ...entry }],
+      logs: [...d.logs, { id: uid(), weekId: weekId(), date: TODAY(), sessionType: null, ...entry }],
     }));
   }, [patch]);
 

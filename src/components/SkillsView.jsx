@@ -37,6 +37,8 @@ const COLOR_TEXT = {
 
 export default function SkillsView() {
   const { meData, actions } = useStore();
+  // openExercise is now { id, prescription } | null so we can carry the
+  // ladder rung's target text into the ExerciseSheet header.
   const [openExercise, setOpenExercise] = useState(null);
   if (!meData) return null;
 
@@ -52,7 +54,7 @@ export default function SkillsView() {
                 key={ladder.id}
                 ladder={ladder}
                 logs={meData.logs || []}
-                onOpen={(id) => setOpenExercise(id)}
+                onOpen={(rung) => setOpenExercise({ id: rung.id, prescription: targetText(rung, ladder.unit) })}
               />
             : <ProgressionCard
                 key={ladder.id}
@@ -60,18 +62,24 @@ export default function SkillsView() {
                 current={Math.min(meData.ladders?.[ladder.id] ?? 0, ladder.rungs.length - 1)}
                 logs={meData.logs || []}
                 onSetRung={(i) => actions.setLadderRung(ladder.id, i)}
-                onOpen={(id) => setOpenExercise(id)}
+                onOpen={(rung) => setOpenExercise({ id: rung.id, prescription: targetText(rung, ladder.unit) })}
               />
         )}
       </div>
 
       <ExerciseSheet
         open={!!openExercise}
-        exerciseId={openExercise}
+        exerciseId={openExercise?.id}
+        prescription={openExercise?.prescription}
         onClose={() => setOpenExercise(null)}
       />
     </div>
   );
+}
+
+function targetText(rung, ladderUnit) {
+  const unit = rung.unit || ladderUnit;
+  return `Target: ${rung.target}${unit === 'sec' ? 's' : ' reps'}`;
 }
 
 // A standard progression: horizontal rungs, current rung highlighted,
@@ -99,7 +107,7 @@ function ProgressionCard({ ladder, current, logs, onSetRung, onOpen }) {
             <button
               key={r.id}
               onClick={() => onSetRung(i)}
-              onDoubleClick={() => onOpen(r.id)}
+              onDoubleClick={() => onOpen(r)}
               className={`flex-shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
                 active
                   ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
@@ -116,7 +124,7 @@ function ProgressionCard({ ladder, current, logs, onSetRung, onOpen }) {
 
       <div className="mt-3 flex items-center gap-3">
         <button
-          onClick={() => onOpen(currentRung.id)}
+          onClick={() => onOpen(currentRung)}
           className="text-xs text-zinc-300 hover:text-emerald-400 underline-offset-2 hover:underline"
         >
           {currentRung.label} · target {currentRung.target}{(currentRung.unit || ladder.unit) === 'sec' ? 's' : ' reps'}
@@ -150,7 +158,7 @@ function TrackerCard({ ladder, logs, onOpen }) {
           return (
             <li key={r.id}>
               <button
-                onClick={() => onOpen(r.id)}
+                onClick={() => onOpen(r)}
                 className="w-full text-left px-1 py-2.5 flex items-center gap-3 hover:bg-zinc-800/40 rounded-lg"
               >
                 <div className="flex-1 min-w-0">

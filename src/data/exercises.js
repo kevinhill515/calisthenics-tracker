@@ -7,7 +7,69 @@ const yt = (q) =>
   'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
 
 export const EXERCISES = {
-  // ---------- prep ----------
+  // ---------- warmup movements (bundled into routines via warmups.js) ----------
+  'wrist-circles': {
+    name: 'Wrist circles',
+    cue: 'Interlace fingers in front of chest, slowly circle wrists in both directions through full range of motion.',
+    yt: yt('wrist circles warmup'),
+  },
+  'fingers-fwd-wrist-hold': {
+    name: 'Fingers-forward wrist hold',
+    cue: 'On all fours, hands flat on the floor with fingers pointing toward your knees. Slowly rock weight forward and back over the wrists. Should feel a strong stretch in the inner forearms.',
+    yt: yt('fingers forward wrist stretch'),
+  },
+  'fingers-back-wrist-hold': {
+    name: 'Fingers-back wrist hold',
+    cue: 'On all fours, hands flat on the floor with fingers pointing AWAY from you (palms still down). Slowly rock weight back over the heels of the hands.',
+    yt: yt('fingers back wrist stretch'),
+  },
+  'fingers-side-wrist-hold': {
+    name: 'Fingers-sideways wrist hold',
+    cue: 'On all fours, fingers pointing to the right, slowly rock weight side to side. Switch to fingers pointing left.',
+    yt: yt('sideways wrist stretch'),
+  },
+  'prayer-stretch': {
+    name: 'Prayer stretch',
+    cue: 'Palms together at chest height. Slowly lower the hands toward your waist while keeping the palms pressed together. Stop when you feel a strong stretch in the inner forearms.',
+    yt: yt('prayer stretch wrists'),
+  },
+  'reverse-prayer': {
+    name: 'Reverse prayer stretch',
+    cue: 'Backs of hands pressed together at chest height. Slowly raise upward as far as you can while keeping the backs of hands touching.',
+    yt: yt('reverse prayer stretch'),
+  },
+  'band-dislocate': {
+    name: 'Band dislocates',
+    cue: 'Hold a resistance band wide overhead with straight arms. Rotate it backward over your head until it touches your back, then forward over your head. Wider grip = easier.',
+    yt: yt('band dislocates shoulder'),
+  },
+  'prone-ytw': {
+    name: 'Prone Y / T / W raises',
+    cue: 'Lying face-down: arms in a Y overhead, lift hands off the floor. Lower. Then T (arms straight out). Then W (elbows bent, hands by ears). Squeeze shoulder blades on each rep.',
+    yt: yt('prone y t w raises'),
+  },
+  'banded-face-pull': {
+    name: 'Banded face pulls',
+    cue: 'Anchor a band at face height. Pull both ends to your face with elbows wide and high. Squeeze the rear delts at the end. Slow eccentric back to start.',
+    yt: yt('banded face pull'),
+  },
+  'banded-pull-apart': {
+    name: 'Band pull-aparts',
+    cue: 'Hold a band wide at chest height with straight arms. Pull arms wide, squeeze shoulder blades together hard. Slow back to start.',
+    yt: yt('band pull apart'),
+  },
+  'protraction-retraction': {
+    name: 'Protraction / retraction holds',
+    cue: 'In a plank with locked-out arms, slowly cycle through full protraction (push the floor away, upper back rounds) and full retraction (pinch blades, chest sinks).',
+    yt: yt('scapular protraction retraction plank'),
+  },
+  'eccentric-wrist-flexion': {
+    name: 'Eccentric loaded wrist flexion',
+    cue: 'Hold a light dumbbell in one hand, palm up, forearm resting on a bench so the wrist hangs over the edge. Slowly lower the wrist down (eccentric only); use the other hand to reset the weight. Build tendon strength over weeks.',
+    yt: yt('eccentric wrist flexion'),
+  },
+
+  // ---------- prep (legacy / aggregate) ----------
   'wrist-shoulder-prep': {
     name: 'Wrist + shoulder prep',
     cue: '10 min routine: wrist circles, fingers-forward holds, fingers-back holds, prayer + reverse prayer stretches, scapular push-ups, band dislocates, prone Y/T/W raises.',

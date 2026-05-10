@@ -9,7 +9,14 @@ export const SESSION_META = {
   Push:        { color: 'rose',    icon: '↑', focus: 'Planche line + horizontal/vertical pressing' },
   Pull:        { color: 'sky',     icon: '↓', focus: 'Front lever line + horizontal/vertical pulling' },
   'Skill+Legs':{ color: 'amber',   icon: '✦', focus: 'Handstand, flag, dynamic skills, lower body' },
-  Density:     { color: 'emerald', icon: '⟳', focus: 'Heria-style circuit / freestyle' },
+  Density: {
+    color: 'emerald',
+    icon: '⟳',
+    focus: 'Heria-style circuit / freestyle',
+    info:
+      "Heria-style = Chris Heria's back-to-back circuit format. Move through the listed movements with minimal rest between each (10–30s); take a longer rest only between full rounds. Goal is conditioning + practicing strength under fatigue. Move quickly, but never compromise form. " +
+      "When the session prescribes EMOM (every minute on the minute), start each minute with the prescribed reps and rest the rest of the minute.",
+  },
 };
 
 export const PHASES = [
