@@ -47,7 +47,10 @@ export default function ExerciseSheet({ exerciseId, prescription, sessionType, o
     return () => clearInterval(id);
   }, [holdRunning]);
 
-  // ---- rest timer (kicks off when you log a set) ----
+  // ---- rest timer ----
+  // Driven by the Hold-timer button: ■ (stop hold) starts the rest timer,
+  // ▶ (start hold) cancels it. Log set does NOT touch the rest timer —
+  // user logs after the whole exercise (all sets) is done.
   const [restRemaining, setRestRemaining] = useState(0); // 0 = not running
   useEffect(() => {
     if (restRemaining <= 0) return;
@@ -85,7 +88,19 @@ export default function ExerciseSheet({ exerciseId, prescription, sessionType, o
     });
     setSets(''); setReps(''); setHold(''); setLoad(''); setRpe(''); setNotes('');
     setHoldRunning(false);
-    setRestRemaining(90); // start a 90s rest timer by default
+    // Note: don't touch the rest timer here — it's hold-button-driven, and
+    // user logs at the very end of the exercise after all sets are done.
+  };
+
+  // Hold-button click: toggles hold, swaps with rest timer.
+  const toggleHold = () => {
+    if (holdRunning) {
+      setHoldRunning(false);
+      setRestRemaining(90);  // start rest when you stop the hold
+    } else {
+      setRestRemaining(0);   // cancel rest when you start a new hold
+      setHoldRunning(true);
+    }
   };
 
   // History (any session) — newest first. The first entry is "last logged".
@@ -98,19 +113,6 @@ export default function ExerciseSheet({ exerciseId, prescription, sessionType, o
   return (
     <Sheet open={open} onClose={onClose} title={ex.name}>
       <div className="px-5 py-4 space-y-5">
-        {/* Rest-timer banner — appears after a set is logged */}
-        {restRemaining > 0 && (
-          <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
-            <span className="text-amber-200 font-bold tabular-nums text-lg">{formatMSS(restRemaining)}</span>
-            <span className="text-[11px] uppercase tracking-wide text-amber-300/80">Rest</span>
-            <div className="ml-auto flex items-center gap-1">
-              <button onClick={() => setRestRemaining((r) => Math.max(15, r - 15))} className="px-2 py-1 text-xs rounded bg-zinc-800 text-zinc-300">−15s</button>
-              <button onClick={() => setRestRemaining((r) => r + 30)} className="px-2 py-1 text-xs rounded bg-zinc-800 text-zinc-300">+30s</button>
-              <button onClick={() => setRestRemaining(0)} className="px-2 py-1 text-xs rounded bg-zinc-800 text-zinc-400">×</button>
-            </div>
-          </div>
-        )}
-
         {prescription && (
           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-3 py-2 flex items-baseline gap-2">
             <span className="text-[10px] uppercase tracking-wide text-emerald-400/70">Today</span>
@@ -153,7 +155,8 @@ export default function ExerciseSheet({ exerciseId, prescription, sessionType, o
           <div className="grid grid-cols-3 gap-2">
             <Field label="Sets" value={sets} onChange={setSets} placeholder="–" />
             <Field label="Reps" value={reps} onChange={setReps} placeholder="–" />
-            {/* Hold field with inline stopwatch button */}
+            {/* Hold field with inline stopwatch button — toggleHold also
+                drives the rest timer (start rest on stop, cancel on start) */}
             <label className="block">
               <span className="text-[10px] uppercase tracking-wide text-zinc-500">Hold (s)</span>
               <div className="relative mt-1">
@@ -166,7 +169,7 @@ export default function ExerciseSheet({ exerciseId, prescription, sessionType, o
                   className={`w-full pr-9 bg-zinc-800 border rounded-lg px-2 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 ${holdRunning ? 'border-amber-500/60 text-amber-200' : 'border-zinc-700'}`}
                 />
                 <button
-                  onClick={() => setHoldRunning((r) => !r)}
+                  onClick={toggleHold}
                   className={`absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded flex items-center justify-center text-sm ${holdRunning ? 'text-amber-300 bg-amber-500/20' : 'text-zinc-300 bg-zinc-700 hover:bg-zinc-600'}`}
                   aria-label={holdRunning ? 'Stop hold timer' : 'Start hold timer'}
                   type="button"
@@ -177,7 +180,43 @@ export default function ExerciseSheet({ exerciseId, prescription, sessionType, o
             </label>
             <Field label="Load (lb)" value={load} onChange={setLoad} placeholder="–" />
             <Field label="RPE 1–10"  value={rpe}  onChange={setRpe}  placeholder="–" />
+            {/* Rest timer cell — directly under Hold, right of RPE.
+                Shows the live countdown when active; "—" when idle. */}
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-wide text-zinc-500">Rest</span>
+              <div
+                className={`mt-1 rounded-lg px-2 py-2 text-sm tabular-nums border flex items-center justify-between ${
+                  restRemaining > 0
+                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-200 font-bold'
+                    : 'bg-zinc-800 border-zinc-700 text-zinc-500'
+                }`}
+              >
+                <span>{restRemaining > 0 ? formatMSS(restRemaining) : '—'}</span>
+                {restRemaining > 0 && (
+                  <button
+                    onClick={() => setRestRemaining(0)}
+                    className="text-amber-300/70 hover:text-amber-200 text-xs ml-1"
+                    aria-label="Stop rest timer"
+                    type="button"
+                  >×</button>
+                )}
+              </div>
+            </label>
           </div>
+
+          {/* Rest timer +/- controls — shown only when active */}
+          {restRemaining > 0 && (
+            <div className="mt-2 flex justify-end gap-1.5">
+              <button
+                onClick={() => setRestRemaining((r) => Math.max(15, r - 15))}
+                className="px-2 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+              >−15s</button>
+              <button
+                onClick={() => setRestRemaining((r) => r + 30)}
+                className="px-2 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+              >+30s</button>
+            </div>
+          )}
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
