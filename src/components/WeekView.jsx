@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import ProgressRing from './ProgressRing.jsx';
 import SessionSheet from './SessionSheet.jsx';
+import PhaseJourney from './PhaseJourney.jsx';
+import ActivityHeatmap from './ActivityHeatmap.jsx';
+import WeeklyRecap from './WeeklyRecap.jsx';
 import { SESSION_TYPES, SESSION_META, phaseForWeek, isDeloadWeek } from '../data/program.js';
 import { useStore, USER_NAMES } from '../store.jsx';
 import { weekId, weekNumber, fmtWeekRange } from '../utils/dates.js';
@@ -46,6 +49,13 @@ export default function WeekView() {
           </span>
         )}
       </div>
+
+      {/* Phase journey progress bar (5 segments, current segment fills with weeks-into-phase) */}
+      <PhaseJourney
+        startDate={meData.startDate}
+        weekNum={wkNum}
+        phaseOverride={meData.phaseOverride}
+      />
 
       {/* Hero ring + streak + friend pill */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center gap-4 mb-4">
@@ -106,8 +116,16 @@ export default function WeekView() {
         })}
       </div>
 
+      {/* Weekly recap — appears once all 4 sessions are marked complete */}
+      {myDoneCount === SESSION_TYPES.length && <WeeklyRecap meData={meData} />}
+
+      {/* 28-day activity heatmap (Sat-Fri columns) */}
+      <div className="mt-4">
+        <ActivityHeatmap logs={meData.logs || []} />
+      </div>
+
       {/* Phase context */}
-      <div className="mt-5 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
         <div className="text-xs uppercase tracking-wide text-zinc-500 mb-1">Phase goal</div>
         <p className="text-sm text-zinc-300 leading-relaxed">{phase.goal}</p>
         {phase.note && (

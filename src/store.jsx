@@ -4,7 +4,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useCallback, useState } from 'react';
 import { fetchAllUsers, upsertUser, SUPA_CONFIGURED } from './api/supabase.js';
-import { weekId } from './utils/dates.js';
+import { weekId, parseDate } from './utils/dates.js';
 import { uid } from './utils/ids.js';
 
 const USERS = ['kevin', 'bucky'];
@@ -187,11 +187,20 @@ export function StoreProvider({ children }) {
   // entry must include exerciseId; sessionType is optional but recommended —
   // it's used to scope "logged today" indicators per session so e.g. push-ups
   // logged during the Push session don't show as already-done on Density.
+  // entry.date may be supplied to log to a different day (e.g. yesterday); the
+  // weekId is then derived from that date so the log lands in the right week.
   const addLog = useCallback((entry) => {
-    patch((d) => ({
-      ...d,
-      logs: [...d.logs, { id: uid(), weekId: weekId(), date: TODAY(), sessionType: null, ...entry }],
-    }));
+    patch((d) => {
+      const date = entry.date || TODAY();
+      const wid = weekId(parseDate(date));
+      return {
+        ...d,
+        logs: [
+          ...d.logs,
+          { id: uid(), sessionType: null, ...entry, date, weekId: wid },
+        ],
+      };
+    });
   }, [patch]);
 
   const removeLog = useCallback((id) => {
