@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ProgressRing from './ProgressRing.jsx';
 import SessionSheet from './SessionSheet.jsx';
+import DensitySheet from './DensitySheet.jsx';
 import PhaseJourney from './PhaseJourney.jsx';
 import ActivityHeatmap from './ActivityHeatmap.jsx';
 import WeeklyRecap from './WeeklyRecap.jsx';
@@ -133,12 +134,23 @@ export default function WeekView() {
         )}
       </div>
 
-      <SessionSheet
-        open={!!openSession}
-        sessionType={openSession}
-        phase={phase}
-        onClose={() => setOpenSession(null)}
-      />
+      {/* Density circuits get a dedicated round-by-round sheet; all other
+          sessions (and EMOM / freestyle Density in later phases) fall
+          through to the standard list-style sheet. */}
+      {openSession === 'Density' && phase.sessions.Density?.rounds ? (
+        <DensitySheet
+          open={!!openSession}
+          phase={phase}
+          onClose={() => setOpenSession(null)}
+        />
+      ) : (
+        <SessionSheet
+          open={!!openSession}
+          sessionType={openSession}
+          phase={phase}
+          onClose={() => setOpenSession(null)}
+        />
+      )}
     </div>
   );
 }

@@ -55,7 +55,7 @@ export const PHASES = [
         { ex: 'calf-raise',                dose: '3 × 15' },
         { ex: 'l-sit-tuck',                dose: '5 × max (parallettes)' },
       ]},
-      Density: { note: '3 rounds, minimal rest', items: [
+      Density: { rounds: 3, note: '3 rounds, minimal rest between exercises, longer rest between rounds.', items: [
         { ex: 'push-up',          dose: '10' },
         { ex: 'pull-up',          dose: '8' },
         { ex: 'dip',              dose: '10' },
@@ -102,7 +102,7 @@ export const PHASES = [
         { ex: 'nordic-curl-negative',      dose: '4 × 5' },
         { ex: 'l-sit-tuck',                dose: '5 × max (→ advanced tuck)' },
       ]},
-      Density: { note: '4 rounds', items: [
+      Density: { rounds: 4, note: '4 rounds, minimal rest between exercises.', items: [
         { ex: 'explosive-pullup', dose: '8 (chest to bar)' },
         { ex: 'archer-pushup',    dose: '10 (5/side)' },
         { ex: 'dip',              dose: '8' },
@@ -199,7 +199,7 @@ export const PHASES = [
         { ex: 'pistol-squat',            dose: '4 × 5/leg (weighted)' },
         { ex: 'nordic-curl',             dose: '4 × 5 (full ROM)' },
       ]},
-      Density: { note: 'Lighter — recovery is critical at this phase. 3 rounds + 10 min mobility', items: [
+      Density: { rounds: 3, note: 'Lighter — recovery is critical at this phase. 3 rounds + 10 min mobility after.', items: [
         { ex: 'strict-muscle-up', dose: '5' },
         { ex: 'dip',              dose: '10' },
         { ex: 'push-up',          dose: '10' },
