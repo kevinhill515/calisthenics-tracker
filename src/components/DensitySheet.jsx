@@ -30,13 +30,44 @@ export default function DensitySheet({ open, onClose, phase }) {
   const [round, setRound] = useState(1);
   const [inputs, setInputs] = useState(() => buildInitialInputs(session?.items));
 
-  // Reset round + inputs every time the sheet is reopened (treat each open
-  // as a fresh density session — logs already saved are kept on the user)
+  // Active hold-timer for one of the seconds-based exercises in the round.
+  // Only one can run at a time. The interval below fills the input live.
+  const [timing, setTiming] = useState(null); // { exerciseId, startedAt } | null
+  useEffect(() => {
+    if (!timing) return;
+    const id = setInterval(() => {
+      const secs = Math.floor((Date.now() - timing.startedAt) / 1000);
+      setInputs((prev) => ({ ...prev, [timing.exerciseId]: String(secs) }));
+    }, 200);
+    return () => clearInterval(id);
+  }, [timing]);
+
+  // Between-rounds rest timer — auto-starts when you Save round, ticks
+  // down, and vibrates at 0. Banner sits below the round selector.
+  const [restRemaining, setRestRemaining] = useState(0);
+  useEffect(() => {
+    if (restRemaining <= 0) return;
+    const id = setInterval(() => {
+      setRestRemaining((r) => {
+        if (r <= 1) {
+          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(250);
+          return 0;
+        }
+        return r - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [restRemaining]);
+
+  // Reset round + inputs + timers every time the sheet (re)opens. Logs
+  // already pushed to Supabase aren't touched.
   useEffect(() => {
     if (open) {
       setRound(1);
       setInputs(buildInitialInputs(session?.items));
     }
+    setTiming(null);
+    setRestRemaining(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -55,7 +86,31 @@ export default function DensitySheet({ open, onClose, phase }) {
   const isLast = round >= totalRounds;
   const isAlreadyComplete = !!meData?.weeks?.[wid]?.Density;
 
-  const setInput = (exId, val) => setInputs((prev) => ({ ...prev, [exId]: val }));
+  const setInput = (exId, val) => {
+    // Manual edit cancels any running hold-timer on this exercise so the
+    // input doesn't get overwritten by the interval on the next tick.
+    if (timing?.exerciseId === exId) setTiming(null);
+    setInputs((prev) => ({ ...prev, [exId]: val }));
+  };
+
+  // Tap ▶ on a seconds-based exercise to start the live counter; tap ■ to
+  // stop. Only one timer runs at a time.
+  const toggleExerciseTimer = (exId) => {
+    if (timing?.exerciseId === exId) {
+      setTiming(null);
+    } else {
+      setInputs((prev) => ({ ...prev, [exId]: '0' }));
+      setTiming({ exerciseId: exId, startedAt: Date.now() });
+    }
+  };
+
+  // Jump to an arbitrary round (manual selector tap) — kill all timers.
+  const jumpToRound = (n) => {
+    setRound(n);
+    setInputs(buildInitialInputs(session.items));
+    setTiming(null);
+    setRestRemaining(0);
+  };
 
   const saveRound = () => {
     // One log entry per exercise, tagged with the round number in notes.
@@ -72,12 +127,15 @@ export default function DensitySheet({ open, onClose, phase }) {
         notes: `Round ${round}/${totalRounds}`,
       });
     }
+    // Any active exercise timer is now stale — kill it.
+    setTiming(null);
     if (isLast) {
       if (!isAlreadyComplete) actions.toggleSession(wid, 'Density');
       onClose();
     } else {
       setRound(round + 1);
       setInputs(buildInitialInputs(session.items));
+      setRestRemaining(60); // default Heria-style between-rounds rest
     }
   };
 
@@ -94,10 +152,7 @@ export default function DensitySheet({ open, onClose, phase }) {
             {Array.from({ length: totalRounds }, (_, i) => i + 1).map((n) => (
               <button
                 key={n}
-                onClick={() => {
-                  setRound(n);
-                  setInputs(buildInitialInputs(session.items));
-                }}
+                onClick={() => jumpToRound(n)}
                 className={`flex-1 py-2 rounded-xl text-sm font-bold border ${
                   n === round
                     ? 'bg-emerald-500 text-zinc-950 border-emerald-500'
@@ -109,6 +164,32 @@ export default function DensitySheet({ open, onClose, phase }) {
             ))}
           </div>
         </div>
+
+        {/* Between-rounds rest timer — auto-starts after Save round (not last) */}
+        {restRemaining > 0 && (
+          <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
+            <span className="text-amber-200 font-bold tabular-nums text-lg">
+              {formatMSS(restRemaining)}
+            </span>
+            <span className="text-[11px] uppercase tracking-wide text-amber-300/80">
+              Rest before round {round}
+            </span>
+            <div className="ml-auto flex items-center gap-1">
+              <button
+                onClick={() => setRestRemaining((r) => Math.max(15, r - 15))}
+                className="px-2 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+              >−15s</button>
+              <button
+                onClick={() => setRestRemaining((r) => r + 30)}
+                className="px-2 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+              >+30s</button>
+              <button
+                onClick={() => setRestRemaining(0)}
+                className="px-2 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400"
+              >×</button>
+            </div>
+          </div>
+        )}
 
         {/* Heria-style note + per-session note */}
         {meta?.info && (
@@ -155,9 +236,28 @@ export default function DensitySheet({ open, onClose, phase }) {
                           value={inputs[item.ex] ?? ''}
                           onChange={(e) => setInput(item.ex, e.target.value)}
                           placeholder={d.target != null ? String(d.target) : '–'}
-                          className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500"
+                          className={`flex-1 bg-zinc-900 border rounded-lg px-2 py-1.5 text-sm placeholder:text-zinc-500 ${
+                            timing?.exerciseId === item.ex
+                              ? 'border-amber-500/60 text-amber-200'
+                              : 'border-zinc-700 text-zinc-100'
+                          }`}
                         />
-                        <span className="text-xs text-zinc-500 min-w-[36px]">{unit}</span>
+                        {/* Inline play/stop only on seconds-based exercises */}
+                        {d.type === 'hold' && (
+                          <button
+                            onClick={() => toggleExerciseTimer(item.ex)}
+                            className={`w-8 h-8 rounded flex items-center justify-center text-sm ${
+                              timing?.exerciseId === item.ex
+                                ? 'text-amber-300 bg-amber-500/20'
+                                : 'text-zinc-300 bg-zinc-700 hover:bg-zinc-600'
+                            }`}
+                            aria-label={timing?.exerciseId === item.ex ? 'Stop hold timer' : 'Start hold timer'}
+                            type="button"
+                          >
+                            {timing?.exerciseId === item.ex ? '■' : '▶'}
+                          </button>
+                        )}
+                        <span className="text-xs text-zinc-500 min-w-[28px]">{unit}</span>
                       </div>
                     </div>
                   </div>
@@ -188,6 +288,12 @@ export default function DensitySheet({ open, onClose, phase }) {
       </div>
     </Sheet>
   );
+}
+
+function formatMSS(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 // Parse the dose string from a session item ("10", "8", "30s", "8 (chest to bar)")
