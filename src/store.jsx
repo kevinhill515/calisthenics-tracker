@@ -225,13 +225,22 @@ export function StoreProvider({ children }) {
 
   // Add a one-off custom exercise scoped to a session type. Returns the id
   // so the caller can immediately open the ExerciseSheet on it.
-  const addCustomExercise = useCallback((sessionType, name) => {
+  // `opts` may include { unit: 'reps' | 'sec', target: number } — used by
+  // the DensitySheet to render the right field + prefill the input.
+  const addCustomExercise = useCallback((sessionType, name, opts = {}) => {
     const id = `custom-${uid()}`;
+    const { unit, target } = opts;
     patch((d) => ({
       ...d,
       customExercises: {
         ...(d.customExercises || {}),
-        [id]: { name: name.trim(), sessionType, hidden: false },
+        [id]: {
+          name: name.trim(),
+          sessionType,
+          hidden: false,
+          ...(unit ? { unit } : {}),
+          ...(target != null ? { target } : {}),
+        },
       },
     }));
     return id;

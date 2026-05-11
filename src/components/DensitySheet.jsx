@@ -7,28 +7,57 @@ import { useEffect, useMemo, useState } from 'react';
 
 // Specialized sheet for circuit-style Density sessions (Phase 1, 2, 4).
 // Walk through one round at a time, showing every exercise in order with
-// an input prefilled to the prescribed target. User completes the whole
-// round, fills in actual numbers, taps "Save round" — gets a fresh blank
-// next round. Last round's save also marks the session complete.
+// inputs prefilled to the prescribed target. User completes the round,
+// fills in actuals (reps + optional weight, or held seconds), taps "Save
+// round" — gets a fresh blank next round. Last round's save also marks
+// the session complete.
 export default function DensitySheet({ open, onClose, phase }) {
   const { actions, meData } = useStore();
   const session = phase?.sessions?.Density;
   const totalRounds = session?.rounds || 1;
   const meta = SESSION_META.Density;
 
-  // Initial inputs: prefilled to the target value (so a "did exactly as
-  // prescribed" round is one tap, not five number-pads).
+  // Combine prescribed items with any user-added custom exercises for
+  // Density into a single normalized list. Custom items appear at the end
+  // of the round.
+  const allItems = useMemo(() => {
+    const prescribed = (session?.items || []).map((it) => {
+      const d = parseDose(it.dose);
+      return {
+        ex: it.ex,
+        name: null,                  // resolved from EXERCISES at render
+        unit: d.type === 'hold' ? 'sec' : 'reps',
+        target: d.target,
+        doseString: it.dose,
+        isCustom: false,
+      };
+    });
+    const customs = Object.entries(meData?.customExercises || {})
+      .filter(([, c]) => c.sessionType === 'Density' && !c.hidden)
+      .map(([id, c]) => ({
+        ex: id,
+        name: c.name,
+        unit: c.unit === 'sec' ? 'sec' : 'reps',
+        target: c.target ?? null,
+        doseString: c.target != null ? `${c.target}${c.unit === 'sec' ? 's' : ''}` : null,
+        isCustom: true,
+      }));
+    return [...prescribed, ...customs];
+  }, [session?.items, meData?.customExercises]);
+
+  // Inputs (the rep/sec value the user achieved this round) — prefilled
+  // to the target so a "did exactly as prescribed" round is one tap.
   const buildInitialInputs = (items) => {
     const out = {};
     for (const it of items || []) {
-      const d = parseDose(it.dose);
-      if (d.target != null) out[it.ex] = String(d.target);
+      if (it.target != null) out[it.ex] = String(it.target);
     }
     return out;
   };
 
   const [round, setRound] = useState(1);
-  const [inputs, setInputs] = useState(() => buildInitialInputs(session?.items));
+  const [inputs, setInputs] = useState(() => buildInitialInputs(allItems));
+  const [loads, setLoads]   = useState({}); // optional weight per exercise (lb)
 
   // Active hold-timer for one of the seconds-based exercises in the round.
   // Only one can run at a time. The interval below fills the input live.
@@ -64,12 +93,19 @@ export default function DensitySheet({ open, onClose, phase }) {
   useEffect(() => {
     if (open) {
       setRound(1);
-      setInputs(buildInitialInputs(session?.items));
+      setInputs(buildInitialInputs(allItems));
+      setLoads({});
     }
     setTiming(null);
     setRestRemaining(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Inline "+ Add exercise" form state
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newUnit, setNewUnit] = useState('reps');
+  const [newTarget, setNewTarget] = useState('');
 
   // Today's count of distinct exercises logged in Density — informational
   // header so user can see what's been recorded already.
@@ -93,6 +129,9 @@ export default function DensitySheet({ open, onClose, phase }) {
     setInputs((prev) => ({ ...prev, [exId]: val }));
   };
 
+  const setLoad = (exId, val) =>
+    setLoads((prev) => ({ ...prev, [exId]: val }));
+
   // Tap ▶ on a seconds-based exercise to start the live counter; tap ■ to
   // stop. Only one timer runs at a time.
   const toggleExerciseTimer = (exId) => {
@@ -107,23 +146,38 @@ export default function DensitySheet({ open, onClose, phase }) {
   // Jump to an arbitrary round (manual selector tap) — kill all timers.
   const jumpToRound = (n) => {
     setRound(n);
-    setInputs(buildInitialInputs(session.items));
+    setInputs(buildInitialInputs(allItems));
+    setLoads({});
     setTiming(null);
     setRestRemaining(0);
   };
 
+  const submitCustom = () => {
+    const name = newName.trim();
+    if (!name) { setAdding(false); return; }
+    const t = parseFloat(newTarget);
+    actions.addCustomExercise('Density', name, {
+      unit: newUnit,
+      target: isFinite(t) ? t : undefined,
+    });
+    setNewName(''); setNewTarget(''); setNewUnit('reps');
+    setAdding(false);
+  };
+
   const saveRound = () => {
     // One log entry per exercise, tagged with the round number in notes.
-    for (const item of session.items) {
+    for (const item of allItems) {
       const raw = inputs[item.ex];
       const num = parseFloat(raw);
       if (!isFinite(num) || num <= 0) continue;
-      const d = parseDose(item.dose);
+      const rawLoad = loads[item.ex];
+      const loadNum = parseFloat(rawLoad);
       actions.addLog({
         exerciseId: item.ex,
         sessionType: 'Density',
         sets: 1,
-        ...(d.type === 'hold' ? { hold: num } : { reps: num }),
+        ...(item.unit === 'sec' ? { hold: num } : { reps: num }),
+        ...(isFinite(loadNum) && loadNum > 0 ? { load: loadNum } : {}),
         notes: `Round ${round}/${totalRounds}`,
       });
     }
@@ -134,7 +188,8 @@ export default function DensitySheet({ open, onClose, phase }) {
       onClose();
     } else {
       setRound(round + 1);
-      setInputs(buildInitialInputs(session.items));
+      setInputs(buildInitialInputs(allItems));
+      setLoads({});
       setRestRemaining(60); // default Heria-style between-rounds rest
     }
   };
@@ -142,7 +197,7 @@ export default function DensitySheet({ open, onClose, phase }) {
   return (
     <Sheet open={open} onClose={onClose} title="Density" fullHeight>
       <div className="px-5 py-4 space-y-4">
-        {/* Round selector — defaults to the active round but user can jump */}
+        {/* Round selector */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs uppercase tracking-wide text-zinc-500">Round</div>
@@ -165,7 +220,7 @@ export default function DensitySheet({ open, onClose, phase }) {
           </div>
         </div>
 
-        {/* Between-rounds rest timer — auto-starts after Save round (not last) */}
+        {/* Between-rounds rest timer */}
         {restRemaining > 0 && (
           <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
             <span className="text-amber-200 font-bold tabular-nums text-lg">
@@ -175,18 +230,9 @@ export default function DensitySheet({ open, onClose, phase }) {
               Rest before round {round}
             </span>
             <div className="ml-auto flex items-center gap-1">
-              <button
-                onClick={() => setRestRemaining((r) => Math.max(15, r - 15))}
-                className="px-2 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
-              >−15s</button>
-              <button
-                onClick={() => setRestRemaining((r) => r + 30)}
-                className="px-2 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
-              >+30s</button>
-              <button
-                onClick={() => setRestRemaining(0)}
-                className="px-2 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400"
-              >×</button>
+              <button onClick={() => setRestRemaining((r) => Math.max(15, r - 15))} className="px-2 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300">−15s</button>
+              <button onClick={() => setRestRemaining((r) => r + 30)} className="px-2 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300">+30s</button>
+              <button onClick={() => setRestRemaining(0)} className="px-2 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">×</button>
             </div>
           </div>
         )}
@@ -203,18 +249,19 @@ export default function DensitySheet({ open, onClose, phase }) {
           </div>
         )}
 
-        {/* The flow — exercises in order with inputs prefilled to target */}
+        {/* Exercise list */}
         <div>
           <div className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
             In order — minimal rest between
           </div>
           <ul className="space-y-2">
-            {session.items.map((item, i) => {
-              const ex = getExercise(item.ex);
-              const d = parseDose(item.dose);
-              const unit = d.type === 'hold' ? 'sec' : 'reps';
+            {allItems.map((item, i) => {
+              const ex = item.isCustom
+                ? { name: item.name, cue: '' }
+                : getExercise(item.ex);
+              const isTiming = timing?.exerciseId === item.ex;
               return (
-                <li key={i} className="bg-zinc-800/50 border border-zinc-800 rounded-xl p-3">
+                <li key={`${item.ex}-${i}`} className="relative bg-zinc-800/50 border border-zinc-800 rounded-xl p-3">
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 inline-flex w-7 h-7 rounded-full bg-zinc-700 text-zinc-200 text-xs items-center justify-center flex-shrink-0 font-bold">
                       {i + 1}
@@ -222,49 +269,128 @@ export default function DensitySheet({ open, onClose, phase }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline justify-between gap-2">
                         <div className="font-medium text-zinc-100 truncate">{ex.name}</div>
-                        <div className="text-[11px] text-emerald-300 tabular-nums flex-shrink-0">
-                          {item.dose}
-                        </div>
+                        {item.doseString && (
+                          <div className="text-[11px] text-emerald-300 tabular-nums flex-shrink-0">
+                            {item.doseString}
+                          </div>
+                        )}
                       </div>
                       {ex.cue && (
                         <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-2">{ex.cue}</p>
                       )}
-                      <div className="mt-2 flex items-center gap-2">
+
+                      {/* Inputs: reps + weight, OR seconds with timer */}
+                      <div className="mt-2 flex items-center gap-1.5">
                         <input
                           type="number"
                           inputMode="decimal"
                           value={inputs[item.ex] ?? ''}
                           onChange={(e) => setInput(item.ex, e.target.value)}
-                          placeholder={d.target != null ? String(d.target) : '–'}
-                          className={`flex-1 bg-zinc-900 border rounded-lg px-2 py-1.5 text-sm placeholder:text-zinc-500 ${
-                            timing?.exerciseId === item.ex
-                              ? 'border-amber-500/60 text-amber-200'
-                              : 'border-zinc-700 text-zinc-100'
+                          placeholder={item.target != null ? String(item.target) : '–'}
+                          className={`w-16 bg-zinc-900 border rounded-lg px-2 py-1.5 text-sm placeholder:text-zinc-500 ${
+                            isTiming ? 'border-amber-500/60 text-amber-200' : 'border-zinc-700 text-zinc-100'
                           }`}
                         />
-                        {/* Inline play/stop only on seconds-based exercises */}
-                        {d.type === 'hold' && (
-                          <button
-                            onClick={() => toggleExerciseTimer(item.ex)}
-                            className={`w-8 h-8 rounded flex items-center justify-center text-sm ${
-                              timing?.exerciseId === item.ex
-                                ? 'text-amber-300 bg-amber-500/20'
-                                : 'text-zinc-300 bg-zinc-700 hover:bg-zinc-600'
-                            }`}
-                            aria-label={timing?.exerciseId === item.ex ? 'Stop hold timer' : 'Start hold timer'}
-                            type="button"
-                          >
-                            {timing?.exerciseId === item.ex ? '■' : '▶'}
-                          </button>
+                        {item.unit === 'sec' ? (
+                          <>
+                            <button
+                              onClick={() => toggleExerciseTimer(item.ex)}
+                              className={`w-8 h-8 rounded flex items-center justify-center text-sm ${
+                                isTiming
+                                  ? 'text-amber-300 bg-amber-500/20'
+                                  : 'text-zinc-300 bg-zinc-700 hover:bg-zinc-600'
+                              }`}
+                              aria-label={isTiming ? 'Stop hold timer' : 'Start hold timer'}
+                              type="button"
+                            >
+                              {isTiming ? '■' : '▶'}
+                            </button>
+                            <span className="text-xs text-zinc-500">sec</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs text-zinc-500 mr-1">reps</span>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              value={loads[item.ex] ?? ''}
+                              onChange={(e) => setLoad(item.ex, e.target.value)}
+                              placeholder="—"
+                              className="w-14 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500"
+                            />
+                            <span className="text-xs text-zinc-500">lb</span>
+                          </>
                         )}
-                        <span className="text-xs text-zinc-500 min-w-[28px]">{unit}</span>
                       </div>
                     </div>
                   </div>
+
+                  {/* Tiny × on custom items to remove from the circuit */}
+                  {item.isCustom && (
+                    <button
+                      onClick={() => actions.hideCustomExercise(item.ex)}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full text-zinc-600 hover:text-rose-400 hover:bg-zinc-900 flex items-center justify-center text-xs"
+                      aria-label="Remove custom exercise"
+                      type="button"
+                    >×</button>
+                  )}
                 </li>
               );
             })}
           </ul>
+
+          {/* + Add exercise — inline form */}
+          {adding ? (
+            <div className="mt-2 bg-zinc-800/60 border border-zinc-700 rounded-xl p-3 space-y-2">
+              <input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Exercise name…"
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500"
+              />
+              <div className="flex items-center gap-2">
+                <div className="flex bg-zinc-900 border border-zinc-700 rounded-md p-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setNewUnit('reps')}
+                    className={`px-2.5 py-1 rounded ${newUnit === 'reps' ? 'bg-zinc-100 text-zinc-950' : 'text-zinc-400'}`}
+                  >reps</button>
+                  <button
+                    type="button"
+                    onClick={() => setNewUnit('sec')}
+                    className={`px-2.5 py-1 rounded ${newUnit === 'sec' ? 'bg-zinc-100 text-zinc-950' : 'text-zinc-400'}`}
+                  >sec</button>
+                </div>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={newTarget}
+                  onChange={(e) => setNewTarget(e.target.value)}
+                  placeholder="target"
+                  className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500"
+                />
+                <button
+                  type="button"
+                  onClick={submitCustom}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-500 text-zinc-950 text-sm font-bold"
+                >Add</button>
+                <button
+                  type="button"
+                  onClick={() => { setAdding(false); setNewName(''); setNewTarget(''); }}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 text-sm"
+                >Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="w-full mt-2 text-sm text-zinc-400 hover:text-zinc-100 border border-dashed border-zinc-700 hover:border-zinc-500 rounded-xl py-2.5"
+            >
+              + Add exercise
+            </button>
+          )}
         </div>
 
         {/* Save round / Finish button */}
