@@ -1,16 +1,23 @@
-const TABS = [
+const BASE_TABS = [
   { id: 'week',    label: 'Week',    icon: '◧' },
   { id: 'skills',  label: 'Skills',  icon: '⊿' },
   { id: 'prs',     label: 'PRs',     icon: '★' },
-  { id: 'library', label: 'Library', icon: '☰' },
   { id: 'friend',  label: 'Friend',  icon: '◐' },
 ];
 
-export default function BottomNav({ tab, setTab }) {
+// 5th icon when this user has cardio tracking enabled in Settings.
+const CARDIO_TAB = { id: 'cardio', label: 'Cardio', icon: '♡' };
+
+export default function BottomNav({ tab, setTab, cardioEnabled = false }) {
+  const tabs = cardioEnabled
+    ? [BASE_TABS[0], BASE_TABS[1], BASE_TABS[2], CARDIO_TAB, BASE_TABS[3]]
+    : BASE_TABS;
+  const cols = tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-4';
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 safe-bottom z-40">
-      <div className="max-w-xl mx-auto grid grid-cols-5">
-        {TABS.map((t) => {
+      <div className={`max-w-xl mx-auto grid ${cols}`}>
+        {tabs.map((t) => {
           const active = tab === t.id;
           return (
             <button

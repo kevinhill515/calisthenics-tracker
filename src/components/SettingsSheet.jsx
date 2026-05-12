@@ -6,7 +6,7 @@ import { weekNumber } from '../utils/dates.js';
 import { useState } from 'react';
 import { SUPA_CONFIGURED } from '../api/supabase.js';
 
-export default function SettingsSheet({ open, onClose }) {
+export default function SettingsSheet({ open, onClose, onOpenLibrary }) {
   const { meData, identity, actions } = useStore();
   const [showAllStandards, setShowAllStandards] = useState(false);
   if (!meData) return null;
@@ -33,6 +33,33 @@ export default function SettingsSheet({ open, onClose }) {
               </button>
             ))}
           </div>
+        </Section>
+
+        {/* Cardio tracking — per-user opt-in (adds a 5th nav icon when on) */}
+        <Section title="Cardio tracking" sub="Adds a Cardio tab for baseline tests. Per-user — toggle independently.">
+          <button
+            onClick={() => actions.toggleCardioEnabled()}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border ${
+              meData.cardio?.enabled
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                : 'bg-zinc-800 border-zinc-700 text-zinc-300'
+            }`}
+          >
+            <span className="text-sm">{meData.cardio?.enabled ? 'Enabled' : 'Disabled'}</span>
+            <span className={`w-10 h-5 rounded-full relative transition ${meData.cardio?.enabled ? 'bg-emerald-500' : 'bg-zinc-700'}`}>
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-zinc-100 transition ${meData.cardio?.enabled ? 'right-0.5' : 'left-0.5'}`} />
+            </span>
+          </button>
+        </Section>
+
+        {/* Library (was a nav tab — moved here to free that slot for Cardio) */}
+        <Section title="Reference">
+          <button
+            onClick={onOpenLibrary}
+            className="w-full bg-zinc-800 hover:bg-zinc-700 rounded-xl py-2.5 text-sm text-zinc-200"
+          >
+            Open exercise library
+          </button>
         </Section>
 
         {/* Sync status */}

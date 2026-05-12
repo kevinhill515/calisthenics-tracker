@@ -60,7 +60,41 @@ const DEFAULT_DATA = () => ({
   // customExercises: { [id]: { name, sessionType, hidden? } }
   // Persisted forever (even when hidden) so old logs still resolve a name.
   customExercises: {},
+  // cardio: per-user, opt-in. baselines is a map of test id → { name,
+  // type, entries: [{date, value, notes?}], hidden? }. Three built-in
+  // tests always exist; users add custom ones via the + in CardioView.
+  cardio: {
+    enabled: false,
+    baselines: {
+      'mile':     { name: '1 mile',        type: 'time',     entries: [] },
+      '2mile':    { name: '2 mile',        type: 'time',     entries: [] },
+      'jumprope': { name: 'Jump rope max', type: 'duration', entries: [] },
+    },
+  },
 });
+
+// Ensure the three built-in cardio tests always exist after hydrate,
+// even on user data that predates the cardio feature.
+function ensureCardioDefaults(data) {
+  const cur = data.cardio || { enabled: false, baselines: {} };
+  const builtins = {
+    'mile':     { name: '1 mile',        type: 'time',     entries: [] },
+    '2mile':    { name: '2 mile',        type: 'time',     entries: [] },
+    'jumprope': { name: 'Jump rope max', type: 'duration', entries: [] },
+  };
+  const merged = {};
+  for (const k of Object.keys(builtins)) {
+    merged[k] = { ...builtins[k], ...(cur.baselines?.[k] || {}) };
+  }
+  // Keep any user-added custom baselines
+  for (const [k, v] of Object.entries(cur.baselines || {})) {
+    if (!merged[k]) merged[k] = v;
+  }
+  return {
+    ...data,
+    cardio: { enabled: !!cur.enabled, baselines: merged },
+  };
+}
 
 function reducer(state, action) {
   switch (action.type) {
@@ -97,7 +131,7 @@ export function StoreProvider({ children }) {
       try {
         const raw = localStorage.getItem(LS_DATA(u));
         const parsed = raw ? { ...DEFAULT_DATA(), ...JSON.parse(raw) } : DEFAULT_DATA();
-        users[u] = migrateWeeks(parsed);
+        users[u] = ensureCardioDefaults(migrateWeeks(parsed));
       } catch {
         users[u] = DEFAULT_DATA();
       }
@@ -132,7 +166,7 @@ export function StoreProvider({ children }) {
       const localEmpty = isEssentiallyEmpty(local);
       const remoteHasData = !isEssentiallyEmpty(remote);
       if (remoteTs >= localTs || (localEmpty && remoteHasData)) {
-        const merged = migrateWeeks({ ...DEFAULT_DATA(), ...remote, _touched: remoteTs });
+        const merged = ensureCardioDefaults(migrateWeeks({ ...DEFAULT_DATA(), ...remote, _touched: remoteTs }));
         localStorage.setItem(LS_DATA(name), JSON.stringify(merged));
         dispatch({ type: 'setUserData', name, data: merged });
       }
@@ -259,6 +293,75 @@ export function StoreProvider({ children }) {
     });
   }, [patch]);
 
+  // ---- cardio actions ----
+  const toggleCardioEnabled = useCallback(() => {
+    patch((d) => ({
+      ...d,
+      cardio: { ...(d.cardio || { baselines: {} }), enabled: !d.cardio?.enabled },
+    }));
+  }, [patch]);
+
+  const addCardioBaseline = useCallback(({ name, type, target }) => {
+    const id = `cb-${uid()}`;
+    patch((d) => ({
+      ...d,
+      cardio: {
+        ...(d.cardio || { enabled: true, baselines: {} }),
+        baselines: {
+          ...(d.cardio?.baselines || {}),
+          [id]: { name: name.trim(), type, entries: [], ...(target != null ? { target } : {}) },
+        },
+      },
+    }));
+    return id;
+  }, [patch]);
+
+  const removeCardioBaseline = useCallback((id) => {
+    patch((d) => {
+      const cur = d.cardio?.baselines?.[id];
+      if (!cur) return d;
+      // Defaults (mile / 2mile / jumprope) can't be removed — they're
+      // re-added on every hydrate by ensureCardioDefaults anyway.
+      if (id === 'mile' || id === '2mile' || id === 'jumprope') return d;
+      const next = { ...d.cardio.baselines };
+      delete next[id];
+      return { ...d, cardio: { ...d.cardio, baselines: next } };
+    });
+  }, [patch]);
+
+  const logCardioEntry = useCallback((baselineId, entry) => {
+    patch((d) => {
+      const bl = d.cardio?.baselines?.[baselineId];
+      if (!bl) return d;
+      const newEntry = { date: TODAY(), ...entry };
+      return {
+        ...d,
+        cardio: {
+          ...d.cardio,
+          baselines: {
+            ...d.cardio.baselines,
+            [baselineId]: { ...bl, entries: [...(bl.entries || []), newEntry] },
+          },
+        },
+      };
+    });
+  }, [patch]);
+
+  const removeCardioEntry = useCallback((baselineId, entryIndex) => {
+    patch((d) => {
+      const bl = d.cardio?.baselines?.[baselineId];
+      if (!bl) return d;
+      const next = (bl.entries || []).filter((_, i) => i !== entryIndex);
+      return {
+        ...d,
+        cardio: {
+          ...d.cardio,
+          baselines: { ...d.cardio.baselines, [baselineId]: { ...bl, entries: next } },
+        },
+      };
+    });
+  }, [patch]);
+
   // Hard recovery: force-overwrite local with whatever is in Supabase,
   // ignoring all timestamp / emptiness logic. Last-resort button for the
   // user when normal pull won't bring back their data.
@@ -270,7 +373,7 @@ export function StoreProvider({ children }) {
       const name = (row.name || '').toLowerCase();
       if (!USERS.includes(name)) return;
       const remote = row.data || {};
-      const merged = migrateWeeks({ ...DEFAULT_DATA(), ...remote, _touched: Date.now() });
+      const merged = ensureCardioDefaults(migrateWeeks({ ...DEFAULT_DATA(), ...remote, _touched: Date.now() }));
       localStorage.setItem(LS_DATA(name), JSON.stringify(merged));
       dispatch({ type: 'setUserData', name, data: merged });
     });
@@ -295,11 +398,16 @@ export function StoreProvider({ children }) {
         setPhaseOverride,
         addCustomExercise,
         hideCustomExercise,
+        toggleCardioEnabled,
+        addCardioBaseline,
+        removeCardioBaseline,
+        logCardioEntry,
+        removeCardioEntry,
         pull,
         forceRestoreFromCloud,
       },
     }),
-    [state, myData, setIdentity, toggleSession, addLog, removeLog, setLadderRung, toggleStandard, setStartDate, setPhaseOverride, addCustomExercise, hideCustomExercise, pull, forceRestoreFromCloud]
+    [state, myData, setIdentity, toggleSession, addLog, removeLog, setLadderRung, toggleStandard, setStartDate, setPhaseOverride, addCustomExercise, hideCustomExercise, toggleCardioEnabled, addCardioBaseline, removeCardioBaseline, logCardioEntry, removeCardioEntry, pull, forceRestoreFromCloud]
   );
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

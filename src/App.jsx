@@ -7,6 +7,7 @@ import SkillsView from './components/SkillsView.jsx';
 import PRsView from './components/PRsView.jsx';
 import LibraryView from './components/LibraryView.jsx';
 import FriendView from './components/FriendView.jsx';
+import CardioView from './components/CardioView.jsx';
 import SettingsSheet from './components/SettingsSheet.jsx';
 
 export default function App() {
@@ -18,7 +19,7 @@ export default function App() {
 }
 
 function Shell() {
-  const { hydrated, identity } = useStore();
+  const { hydrated, identity, meData } = useStore();
   const [tab, setTab] = useState('week');
   const [settings, setSettings] = useState(false);
 
@@ -29,18 +30,31 @@ function Shell() {
   }
   if (!identity) return <IdentityPicker />;
 
+  const cardioEnabled = !!meData?.cardio?.enabled;
+  // If user disables cardio while it's the active tab, bounce them home.
+  const activeTab = tab === 'cardio' && !cardioEnabled ? 'week' : tab;
+
+  // "Open Library" from Settings sets tab='library' even though Library
+  // is no longer in the bottom nav.
+  const openLibrary = () => { setTab('library'); setSettings(false); };
+
   return (
     <div className="min-h-full flex flex-col bg-zinc-950">
       <TopBar onSettings={() => setSettings(true)} />
       <main className="flex-1">
-        {tab === 'week'    && <WeekView />}
-        {tab === 'skills'  && <SkillsView />}
-        {tab === 'prs'     && <PRsView />}
-        {tab === 'library' && <LibraryView />}
-        {tab === 'friend'  && <FriendView />}
+        {activeTab === 'week'    && <WeekView />}
+        {activeTab === 'skills'  && <SkillsView />}
+        {activeTab === 'prs'     && <PRsView />}
+        {activeTab === 'cardio'  && <CardioView />}
+        {activeTab === 'library' && <LibraryView />}
+        {activeTab === 'friend'  && <FriendView />}
       </main>
-      <BottomNav tab={tab} setTab={setTab} />
-      <SettingsSheet open={settings} onClose={() => setSettings(false)} />
+      <BottomNav tab={activeTab} setTab={setTab} cardioEnabled={cardioEnabled} />
+      <SettingsSheet
+        open={settings}
+        onClose={() => setSettings(false)}
+        onOpenLibrary={openLibrary}
+      />
     </div>
   );
 }
