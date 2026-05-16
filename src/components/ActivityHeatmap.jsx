@@ -3,7 +3,8 @@ import { fmtDate } from '../utils/dates.js';
 // 28 most recent days, 7 columns × 4 rows. Each cell shaded by how many
 // log entries land on that date — feels good to see filled cells march
 // across the grid, instantly answers "did I train Wednesday?".
-export default function ActivityHeatmap({ logs }) {
+// Tap any past cell to drill into that day's logs (`onPickDate(dateStr)`).
+export default function ActivityHeatmap({ logs, onPickDate }) {
   const today = new Date();
   const days = [];
   // Most recent saturday (so columns line up with the Sat-Fri week)
@@ -42,10 +43,12 @@ export default function ActivityHeatmap({ logs }) {
         <DayLabel d="T" />
         <DayLabel d="F" />
         {days.map((d) => (
-          <div
+          <button
             key={d.date}
+            disabled={d.isFuture}
+            onClick={() => !d.isFuture && onPickDate && onPickDate(d.date)}
             title={`${d.date} — ${d.count} log${d.count === 1 ? '' : 's'}`}
-            className={`aspect-square rounded ${cellColor(d)} ${d.isToday ? 'ring-1 ring-emerald-300' : ''}`}
+            className={`aspect-square rounded ${cellColor(d)} ${d.isToday ? 'ring-1 ring-emerald-300' : ''} ${d.isFuture ? '' : 'hover:ring-1 hover:ring-zinc-500 active:scale-95'}`}
           />
         ))}
       </div>

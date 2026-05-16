@@ -17,8 +17,8 @@ export default function PRsView() {
     for (const ladder of SKILL_LADDERS) {
       for (const r of ladder.rungs) {
         const logs = meData.logs.filter((l) => l.exerciseId === r.id);
-        const bestHold = max(logs.map((l) => l.hold));
-        const bestReps = max(logs.map((l) => l.reps));
+        const bestHold = max(logs.map((l) => bestPerSet(l, 'hold')));
+        const bestReps = max(logs.map((l) => bestPerSet(l, 'reps')));
         const lastDate = logs.length ? logs.map((l) => l.date).sort().slice(-1)[0] : null;
         out.push({
           ladder: ladder.name,
@@ -100,4 +100,17 @@ function max(arr) {
   let m = null;
   for (const v of arr) if (v != null && (m == null || v > m)) m = v;
   return m;
+}
+
+// Best single-set value out of a log, preferring per-set arrays when present.
+// 'reps' or 'hold' picks the right key pair.
+export function bestPerSet(log, field) {
+  const perKey = field === 'reps' ? 'perSetReps' : 'perSetHold';
+  const arr = log[perKey];
+  if (Array.isArray(arr) && arr.length) {
+    let m = null;
+    for (const v of arr) if (v != null && (m == null || v > m)) m = v;
+    return m;
+  }
+  return log[field];
 }

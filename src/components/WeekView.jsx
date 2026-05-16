@@ -5,6 +5,7 @@ import DensitySheet from './DensitySheet.jsx';
 import PhaseJourney from './PhaseJourney.jsx';
 import ActivityHeatmap from './ActivityHeatmap.jsx';
 import WeeklyRecap from './WeeklyRecap.jsx';
+import DayDetailSheet from './DayDetailSheet.jsx';
 import { SESSION_TYPES, SESSION_META, phaseForWeek, isDeloadWeek } from '../data/program.js';
 import { useStore, USER_NAMES } from '../store.jsx';
 import { weekId, weekNumber, fmtWeekRange } from '../utils/dates.js';
@@ -19,6 +20,7 @@ const COLOR_MAP = {
 export default function WeekView() {
   const { meData, otherIdentity, otherData, identity } = useStore();
   const [openSession, setOpenSession] = useState(null);
+  const [pickedDate, setPickedDate] = useState(null); // 'YYYY-MM-DD' from heatmap
 
   if (!meData) return null;
   const wid = weekId();
@@ -120,9 +122,12 @@ export default function WeekView() {
       {/* Weekly recap — appears once all 4 sessions are marked complete */}
       {myDoneCount === SESSION_TYPES.length && <WeeklyRecap meData={meData} />}
 
-      {/* 28-day activity heatmap (Sat-Fri columns) */}
+      {/* 28-day activity heatmap (Sat-Fri columns) — tap a day to see logs */}
       <div className="mt-4">
-        <ActivityHeatmap logs={meData.logs || []} />
+        <ActivityHeatmap
+          logs={meData.logs || []}
+          onPickDate={(d) => setPickedDate(d)}
+        />
       </div>
 
       {/* Phase context */}
@@ -151,6 +156,12 @@ export default function WeekView() {
           onClose={() => setOpenSession(null)}
         />
       )}
+
+      <DayDetailSheet
+        open={!!pickedDate}
+        date={pickedDate}
+        onClose={() => setPickedDate(null)}
+      />
     </div>
   );
 }

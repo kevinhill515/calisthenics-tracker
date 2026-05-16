@@ -184,7 +184,7 @@ function bestValue(logs, exerciseId, unit) {
   let m = null;
   for (const l of logs) {
     if (l.exerciseId !== exerciseId) continue;
-    const v = unit === 'sec' ? l.hold : l.reps;
+    const v = bestForUnit(l, unit);
     if (v == null) continue;
     if (m == null || v > m) m = v;
   }
@@ -197,7 +197,7 @@ function bestSeries(logs, exerciseId, unit) {
   const byDate = new Map();
   for (const l of logs) {
     if (l.exerciseId !== exerciseId) continue;
-    const v = unit === 'sec' ? l.hold : l.reps;
+    const v = bestForUnit(l, unit);
     if (v == null) continue;
     const cur = byDate.get(l.date) || 0;
     if (v > cur) byDate.set(l.date, v);
@@ -205,4 +205,16 @@ function bestSeries(logs, exerciseId, unit) {
   return [...byDate.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([_, v]) => ({ v }));
+}
+
+// Best single-set value from a log, preferring perSet arrays when present.
+function bestForUnit(log, unit) {
+  if (unit === 'sec') {
+    const arr = log.perSetHold;
+    if (Array.isArray(arr) && arr.length) return Math.max(...arr.filter((v) => v != null));
+    return log.hold;
+  }
+  const arr = log.perSetReps;
+  if (Array.isArray(arr) && arr.length) return Math.max(...arr.filter((v) => v != null));
+  return log.reps;
 }

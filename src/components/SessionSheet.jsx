@@ -112,14 +112,19 @@ export default function SessionSheet({ open, onClose, sessionType, phase }) {
                 const w = WARMUP_ROUTINES[item.ex];
                 const total = w.items.length;
                 const done = warmupSubCount(item.ex);
+                const allDone = done >= total;
                 return (
                   <Row
                     key={i}
-                    badge="◐"
-                    badgeStyle="bg-amber-500/20 text-amber-300"
+                    badge={allDone ? '✓' : '◐'}
+                    badgeStyle={
+                      allDone
+                        ? 'bg-emerald-500/20 text-emerald-300'
+                        : 'bg-amber-500/20 text-amber-300'
+                    }
                     title={w.name}
                     sub={`${item.dose} · ${total} movements`}
-                    countLabel={done > 0 ? `${done}/${total}` : null}
+                    countLabel={allDone ? 'all' : (done > 0 ? `${done}/${total}` : null)}
                     onClick={() => setWarmupOpen(item.ex)}
                   />
                 );
@@ -221,6 +226,10 @@ export default function SessionSheet({ open, onClose, sessionType, phase }) {
         exerciseId={exerciseOpen?.id}
         prescription={exerciseOpen?.prescription}
         sessionType={sessionType}
+        // When the session is already marked complete, the user is just
+        // adding a forgotten exercise — close back to the session sheet
+        // after logging instead of leaving them on the exercise screen.
+        closeOnLog={isDone}
         onClose={() => setExerciseOpen(null)}
       />
 
