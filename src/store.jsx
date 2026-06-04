@@ -4,14 +4,16 @@
 
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useCallback, useState } from 'react';
 import { fetchAllUsers, upsertUser, SUPA_CONFIGURED } from './api/supabase.js';
-import { weekId, parseDate } from './utils/dates.js';
+import { weekId, parseDate, today } from './utils/dates.js';
 import { uid } from './utils/ids.js';
 
 const USERS = ['kevin', 'bucky'];
 const LS_IDENTITY = 'calis.identity';
 const LS_DATA = (name) => `calis.data.${name}`;
 
-const TODAY = () => new Date().toISOString().slice(0, 10);
+// LOCAL today's date string. Never use toISOString().slice(0,10) — UTC
+// would be a day ahead late in the day for US users and break "today" filters.
+const TODAY = today;
 
 // True when the data looks like a fresh / empty default — no logged
 // sessions, no logs, no ladder rungs set. Used by pull() to decide

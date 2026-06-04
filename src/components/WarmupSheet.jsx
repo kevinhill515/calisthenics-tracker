@@ -4,8 +4,9 @@ import { WARMUP_ROUTINES } from '../data/warmups.js';
 import { getExercise } from '../data/exercises.js';
 import { useStore } from '../store.jsx';
 import { useMemo, useState } from 'react';
+import { today } from '../utils/dates.js';
 
-const TODAY = () => new Date().toISOString().slice(0, 10);
+const TODAY = today;
 
 // Sheet for a warmup routine (e.g. "Wrist + shoulder prep"). Lists each
 // movement with its cue and prescription. Tap any movement to open the
@@ -21,7 +22,9 @@ export default function WarmupSheet({ open, onClose, warmupId, sessionType }) {
     const m = {};
     for (const l of meData?.logs || []) {
       if (l.date !== today) continue;
-      if (l.sessionType !== sessionType) continue;
+      // Allow legacy logs (no sessionType) to show in any warmup, same
+      // as SessionSheet's logic.
+      if (l.sessionType && l.sessionType !== sessionType) continue;
       m[l.exerciseId] = (m[l.exerciseId] || 0) + 1;
     }
     return m;

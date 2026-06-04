@@ -2,9 +2,8 @@ import Sheet from './Sheet.jsx';
 import { useStore } from '../store.jsx';
 import { useState } from 'react';
 import { parseInputForType, formatValue, bestEntry, isLowerBetter, TYPE_LABELS } from '../utils/cardio.js';
+import { today as TODAY } from '../utils/dates.js';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
-
-const TODAY = () => new Date().toISOString().slice(0, 10);
 
 // One-baseline sheet: log a new attempt, see history, sparkline.
 export default function CardioBaselineSheet({ baselineId, open, onClose }) {

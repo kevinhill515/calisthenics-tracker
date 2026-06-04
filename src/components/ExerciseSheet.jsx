@@ -2,9 +2,9 @@ import Sheet from './Sheet.jsx';
 import { getExercise } from '../data/exercises.js';
 import { useStore } from '../store.jsx';
 import { useEffect, useRef, useState } from 'react';
-import { fmtDate } from '../utils/dates.js';
+import { fmtDate, today } from '../utils/dates.js';
 
-const TODAY = () => new Date().toISOString().slice(0, 10);
+const TODAY = today;
 const YESTERDAY = () => {
   const d = new Date();
   d.setDate(d.getDate() - 1);
@@ -18,10 +18,10 @@ const YESTERDAY = () => {
 //   exerciseId    — id from exercises.js or a custom id
 //   prescription  — optional "Today: 4 × 8–12" or "Target: 30s" banner string
 //   sessionType   — 'Push' | 'Pull' | 'Skill+Legs' | 'Density' to scope logs
-//   closeOnLog    — when true, log() closes the sheet (used when the session
-//                   is already complete and the user is just adding one extra)
+//   closeOnLog    — ignored; the sheet always closes after Log set now.
+//                   (kept in the signature so existing callers don't error.)
 export default function ExerciseSheet({
-  exerciseId, prescription, sessionType, closeOnLog = false, open, onClose,
+  exerciseId, prescription, sessionType, closeOnLog: _closeOnLog, open, onClose,
 }) {
   const { actions, meData } = useStore();
   const custom = meData?.customExercises?.[exerciseId];
@@ -119,7 +119,10 @@ export default function ExerciseSheet({
     setHoldRunning(false);
     setPerSet([]);
 
-    if (closeOnLog) onClose();
+    // Always return to the workout (exercise list) after logging. The user
+    // does the full exercise before tapping Log set — they don't want to
+    // stay on the exercise screen with cleared inputs.
+    onClose();
   };
 
   // Hold-button click: toggles hold, swaps with rest timer.

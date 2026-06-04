@@ -2,7 +2,7 @@ import Sheet from './Sheet.jsx';
 import { getExercise } from '../data/exercises.js';
 import { SESSION_META } from '../data/program.js';
 import { useStore } from '../store.jsx';
-import { weekId } from '../utils/dates.js';
+import { weekId, today as TODAY } from '../utils/dates.js';
 import { useEffect, useMemo, useState } from 'react';
 
 // Specialized sheet for circuit-style Density sessions (Phase 1, 2, 4).
@@ -109,10 +109,10 @@ export default function DensitySheet({ open, onClose, phase }) {
 
   // Today's count of distinct exercises logged in Density — informational
   // header so user can see what's been recorded already.
-  const today = new Date().toISOString().slice(0, 10);
+  const todayStr = TODAY();
   const todayDensityLogs = useMemo(
-    () => (meData?.logs || []).filter((l) => l.date === today && l.sessionType === 'Density'),
-    [meData?.logs, today]
+    () => (meData?.logs || []).filter((l) => l.date === todayStr && l.sessionType === 'Density'),
+    [meData?.logs, todayStr]
   );
 
   if (!open || !session) return null;

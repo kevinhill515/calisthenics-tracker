@@ -21,6 +21,14 @@ export function fmtDate(d) {
   return `${y}-${m}-${day}`;
 }
 
+/** Today's date as YYYY-MM-DD in local time.
+ *  NEVER use `new Date().toISOString().slice(0,10)` for this — that's the
+ *  UTC date, which is a day ahead of local in evenings on Pacific time
+ *  and breaks "logged today" filters. */
+export function today() {
+  return fmtDate(new Date());
+}
+
 /** Most-recent Saturday on or before `d`. JS getDay: Sun=0..Sat=6. */
 export function weekStartOf(d) {
   const day = d.getDay();

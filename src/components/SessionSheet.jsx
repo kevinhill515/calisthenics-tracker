@@ -5,10 +5,10 @@ import { getExercise } from '../data/exercises.js';
 import { SESSION_META } from '../data/program.js';
 import { WARMUP_ROUTINES, isWarmup } from '../data/warmups.js';
 import { useStore } from '../store.jsx';
-import { weekId } from '../utils/dates.js';
+import { weekId, today } from '../utils/dates.js';
 import { useMemo, useState } from 'react';
 
-const TODAY = () => new Date().toISOString().slice(0, 10);
+const TODAY = today;
 
 // Detail view for a session card. Lists prescribed exercises plus any
 // custom exercises the user has added for this session type. Exercises
@@ -31,10 +31,10 @@ export default function SessionSheet({ open, onClose, sessionType, phase }) {
     const m = {};
     for (const l of meData?.logs || []) {
       if (l.date !== today) continue;
-      // Scope to this session's logs only. Old logs without sessionType
-      // (l.sessionType undefined) won't match — that's fine, they predate
-      // this fix and shouldn't auto-tick anything.
-      if (l.sessionType !== sessionType) continue;
+      // Scope to this session, but allow legacy logs that pre-date the
+      // sessionType field (l.sessionType == null) to show under any
+      // session — otherwise they look "lost" to the user.
+      if (l.sessionType && l.sessionType !== sessionType) continue;
       m[l.exerciseId] = (m[l.exerciseId] || 0) + 1;
     }
     return m;
