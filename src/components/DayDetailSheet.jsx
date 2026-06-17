@@ -3,14 +3,22 @@ import { useStore } from '../store.jsx';
 import { getExercise } from '../data/exercises.js';
 import { summarizeLog } from './ExerciseSheet.jsx';
 import { formatValue } from '../utils/cardio.js';
-import { parseDate } from '../utils/dates.js';
+import { parseDate, weekId } from '../utils/dates.js';
 import { SESSION_TYPES } from '../data/program.js';
 
-// Read-only sheet showing everything logged on a single date — the day's
-// workout. Opens when the user taps a cell in the ActivityHeatmap.
+// Sheet showing everything logged on a single date — the day's workout.
+// Opens when the user taps a cell in the ActivityHeatmap.
+// Also lets the user mark / unmark this week's session-completion flag
+// per session type — recovery tool for when the in-session "Mark
+// complete" tap didn't stick, OR an alternate place to mark off from.
 export default function DayDetailSheet({ open, date, onClose }) {
-  const { meData } = useStore();
+  const { meData, actions } = useStore();
   if (!open || !date) return null;
+
+  // The completion flag is per Sat-Fri week, keyed by the Saturday of
+  // that week. Compute it from the tapped date.
+  const wid = weekId(parseDate(date));
+  const weekFlags = meData?.weeks?.[wid] || {};
 
   // Workout logs that landed on this date
   const dayLogs = (meData?.logs || []).filter((l) => l.date === date);
@@ -45,8 +53,15 @@ export default function DayDetailSheet({ open, date, onClose }) {
             {SESSION_TYPES.concat(['Other']).map((type) => {
               const group = byType[type];
               if (!group || group.length === 0) return null;
+              const isComplete = type !== 'Other' && !!weekFlags[type];
               return (
-                <SessionGroup key={type} type={type} logs={group} />
+                <SessionGroup
+                  key={type}
+                  type={type}
+                  logs={group}
+                  isComplete={isComplete}
+                  onToggle={type !== 'Other' ? () => actions.toggleSession(wid, type) : null}
+                />
               );
             })}
 
@@ -73,7 +88,7 @@ export default function DayDetailSheet({ open, date, onClose }) {
   );
 }
 
-function SessionGroup({ type, logs }) {
+function SessionGroup({ type, logs, isComplete, onToggle }) {
   // Group logs by exercise so each movement appears once with all sets
   const byExercise = {};
   for (const l of logs) {
@@ -89,6 +104,25 @@ function SessionGroup({ type, logs }) {
           {logs.length} set{logs.length === 1 ? '' : 's'} · {exerciseCount} exercise{exerciseCount === 1 ? '' : 's'}
         </div>
       </div>
+
+      {/* Per-week completion toggle. Operates on the Sat-Fri week
+          containing this date — useful when the original tap didn't
+          stick or you forgot to mark complete after the workout. */}
+      {onToggle && (
+        <button
+          onClick={onToggle}
+          className={`w-full text-left text-xs rounded-xl px-3 py-2 mb-2 transition border ${
+            isComplete
+              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20'
+              : 'bg-zinc-800/60 border-dashed border-zinc-600 text-zinc-300 hover:border-emerald-500/40 hover:text-emerald-300'
+          }`}
+        >
+          {isComplete
+            ? `✓ ${type} marked complete for this week · tap to undo`
+            : `Mark this week's ${type} complete →`}
+        </button>
+      )}
+
       <ul className="bg-zinc-900 border border-zinc-800 rounded-2xl divide-y divide-zinc-800">
         {Object.entries(byExercise).map(([exId, entries]) => {
           const ex = exId.startsWith('custom-') ? { name: '(custom)' } : getExercise(exId);
